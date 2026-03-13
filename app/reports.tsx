@@ -14,6 +14,7 @@ import * as Sharing from "expo-sharing";
 import * as Print from "expo-print";
 import { Asset } from "expo-asset";
 import * as XLSX from "xlsx";
+import { useSubscription } from "../context/SubscriptionContext";
 
 type TimePeriod = "thisMonth" | "lastMonth" | "last3Months" | "last6Months" | "thisYear" | "allTime";
 type ReportType = "revenue" | "expenses" | "full";
@@ -69,6 +70,7 @@ interface ReportData {
 export default function ReportsScreen() {
   const { t, isRTL, lang } = useLanguage();
   const { colors: C, shadow } = useTheme();
+  const { hasFeature } = useSubscription();
   const insets = useSafeAreaInsets();
   const S = useMemo(() => styles(C, shadow), [C, shadow]);
 
@@ -159,6 +161,13 @@ export default function ReportsScreen() {
   }
 
   async function exportSpreadsheet() {
+    if (!hasFeature("export_reports")) {
+      Alert.alert(t("upgradeRequired"), t("upgradeToUnlock"), [
+        { text: t("upgrade"), onPress: () => router.push("/paywall" as any) },
+        { text: t("later"), style: "cancel" },
+      ]);
+      return;
+    }
     if (!data) return;
     setExporting(true);
     try {
@@ -306,6 +315,13 @@ export default function ReportsScreen() {
   }
 
   async function exportPDF() {
+    if (!hasFeature("export_reports")) {
+      Alert.alert(t("upgradeRequired"), t("upgradeToUnlock"), [
+        { text: t("upgrade"), onPress: () => router.push("/paywall" as any) },
+        { text: t("later"), style: "cancel" },
+      ]);
+      return;
+    }
     if (!data) return;
     setExporting(true);
     try {

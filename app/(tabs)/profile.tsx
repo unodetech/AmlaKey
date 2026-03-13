@@ -13,6 +13,7 @@ import { NotificationSettingsModal } from "../../components/NotificationSettings
 import { exportAllData, importAllData, getLastBackupDate } from "../../lib/backup";
 import { userKey, PERSONAL_INFO_KEY, BIOMETRIC_LOCK_KEY } from "../../lib/storage";
 import * as LocalAuthentication from "expo-local-authentication";
+import { useSubscription } from "../../context/SubscriptionContext";
 interface PersonalInfo {
   fullName: string;
   phone: string;
@@ -24,6 +25,7 @@ export default function ProfileScreen() {
   const { t, lang, toggle, isRTL } = useLanguage();
   const { colors: C, isDark, toggleTheme, shadow } = useTheme();
   const { user, signOut } = useAuth();
+  const { isPro, hasFeature } = useSubscription();
   const S = useMemo(() => styles(C, shadow, isDark), [C, shadow, isDark]);
 
   // Personal info
@@ -143,6 +145,24 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      {/* ── Subscription Banner ── */}
+      <TouchableOpacity
+        style={[S.perfBanner, { backgroundColor: isPro ? "#10B981" : C.accent }, isRTL && { flexDirection: "row-reverse" }]}
+        onPress={() => router.push("/paywall" as any)}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontSize: 22 }}>{isPro ? "✅" : "👑"}</Text>
+        <View style={{ flex: 1, marginHorizontal: 12 }}>
+          <Text style={[{ fontSize: 15, fontWeight: "700", color: "#FFF" }, isRTL && { textAlign: "right" }]}>
+            {t("currentPlan")}: {isPro ? t("proPlan") : t("freePlan")}
+          </Text>
+          <Text style={[{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 }, isRTL && { textAlign: "right" }]}>
+            {isPro ? t("subscriptionManage") : t("upgradeToUnlock")}
+          </Text>
+        </View>
+        <Text style={{ color: "#FFF", fontSize: 18 }}>{isRTL ? "‹" : "›"}</Text>
+      </TouchableOpacity>
+
       {/* ── Performance & Reports Banners ── */}
       <TouchableOpacity
         style={[S.perfBanner, isRTL && { flexDirection: "row-reverse" }]}
@@ -183,7 +203,7 @@ export default function ProfileScreen() {
           }
         />
         <Divider />
-        <TouchableOpacity onPress={toggleTheme} activeOpacity={0.7} accessibilityRole="switch" accessibilityLabel={isDark ? t("darkMode") : t("lightMode")} accessibilityState={{ checked: isDark }}>
+        <TouchableOpacity onPress={() => { if (!hasFeature("dark_mode")) { Alert.alert(t("upgradeRequired"), t("upgradeToUnlock"), [{ text: t("upgrade"), onPress: () => router.push("/paywall" as any) }, { text: t("later"), style: "cancel" }]); return; } toggleTheme(); }} activeOpacity={0.7} accessibilityRole="switch" accessibilityLabel={isDark ? t("darkMode") : t("lightMode")} accessibilityState={{ checked: isDark }}>
           <View style={[S.row, isRTL && S.rowRev]}>
             <View style={S.rowIconWrap}>
               <Text style={S.rowIcon}>{isDark ? "🌙" : "☀️"}</Text>

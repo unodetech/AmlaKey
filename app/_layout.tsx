@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "../context/AuthContext";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { LanguageProvider, useLanguage } from "../context/LanguageContext";
 import { NotificationProvider } from "../context/NotificationContext";
+import { SubscriptionProvider } from "../context/SubscriptionContext";
 import { userKey, BIOMETRIC_LOCK_KEY } from "../lib/storage";
 import BiometricGate from "../components/BiometricGate";
 import { RTLSwipeBack } from "../components/RTLSwipeBack";
@@ -137,6 +138,7 @@ function RootNavigator() {
         <Stack.Screen name="reports" options={{ headerShown: false }} />
         <Stack.Screen name="terms" options={{ headerShown: false }} />
         <Stack.Screen name="privacy" options={{ headerShown: false }} />
+        <Stack.Screen name="paywall" options={{ headerShown: false, presentation: "modal" }} />
       </Stack>
       {/* Splash overlay hides any flash of the wrong screen during redirect */}
       {(loading || !navigated || biometricEnabled === null) && (
@@ -162,9 +164,11 @@ function ThemedRoot() {
       <StatusBar style={isDark ? "light" : "dark"} />
       <LanguageProvider>
         <AuthProvider>
-          <NotificationProvider>
-            <RootNavigator />
-          </NotificationProvider>
+          <SubscriptionProvider>
+            <NotificationProvider>
+              <RootNavigator />
+            </NotificationProvider>
+          </SubscriptionProvider>
         </AuthProvider>
       </LanguageProvider>
     </GestureHandlerRootView>

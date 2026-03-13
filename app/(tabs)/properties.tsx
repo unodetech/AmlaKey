@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import { userKey, PERSONAL_INFO_KEY } from "../../lib/storage";
 import { spacing, radii } from "../../constants/theme";
+import { useSubscription, FREE_LIMITS } from "../../context/SubscriptionContext";
 
 type PropertyType = "apartment" | "villa" | "commercial" | "shop";
 const CITIES = ["alkharj", "riyadh", "jeddah", "dammam"];
@@ -56,6 +57,7 @@ export default function PropertiesScreen() {
   const { t, isRTL } = useLanguage();
   const { colors: C, shadow } = useTheme();
   const { user } = useAuth();
+  const { canAddProperty, canAddUnits } = useSubscription();
   const insets = useSafeAreaInsets();
   const uid = user?.id ?? "";
   const S = useMemo(() => styles(C, shadow), [C, shadow]);
@@ -152,6 +154,8 @@ export default function PropertiesScreen() {
       errors.units = t("validationUnitsRequired");
     } else if (units > 500) {
       errors.units = t("validationUnitsMax");
+    } else if (!canAddUnits(units)) {
+      errors.units = t("unitLimitMsg");
     }
     const floors = parseInt(form.floors);
     if (form.floors && floors > 100) {
@@ -211,6 +215,8 @@ export default function PropertiesScreen() {
       errors.units = t("validationUnitsRequired");
     } else if (units > 500) {
       errors.units = t("validationUnitsMax");
+    } else if (!canAddUnits(units)) {
+      errors.units = t("unitLimitMsg");
     }
     const floors = parseInt(editForm.floors);
     if (editForm.floors && floors > 100) {
@@ -279,7 +285,7 @@ export default function PropertiesScreen() {
       <View style={S.container}>
         <View style={[S.header, { paddingTop: insets.top + 10 }, isRTL && S.rowRev]}>
           <Text style={S.headerTitle}>{t("properties")}</Text>
-          <TouchableOpacity style={S.addBtn} onPress={() => { const f = { ...EMPTY_FORM, city: defaultCity }; setForm(f); setAddPropErrors({}); setAddVisible(true); detectCityFromLocation(setForm); }} accessibilityRole="button" accessibilityLabel={t("addProperty")}>
+          <TouchableOpacity style={S.addBtn} onPress={() => { if (!canAddProperty(properties.length)) { Alert.alert(t("propertyLimitTitle"), t("propertyLimitMsg"), [{ text: t("upgrade"), onPress: () => router.push("/paywall" as any) }, { text: t("later"), style: "cancel" }]); return; } const f = { ...EMPTY_FORM, city: defaultCity }; setForm(f); setAddPropErrors({}); setAddVisible(true); detectCityFromLocation(setForm); }} accessibilityRole="button" accessibilityLabel={t("addProperty")}>
             <Text style={S.addBtnText}>+ {t("add")}</Text>
           </TouchableOpacity>
         </View>

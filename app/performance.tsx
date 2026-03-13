@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, ScrollView, Share, StyleSheet, Text,
+  ActivityIndicator, Alert, ScrollView, Share, StyleSheet, Text,
   TouchableOpacity, View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -9,6 +9,7 @@ import { useLanguage, TKey } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, radii } from "../constants/theme";
+import { useSubscription } from "../context/SubscriptionContext";
 
 /* ── types ── */
 type MetricTab = "revenue" | "overdue" | "collected" | "expenses" | "netIncome";
@@ -76,6 +77,7 @@ export default function PerformanceScreen() {
   const { tab } = useLocalSearchParams<{ tab: string }>();
   const { t, isRTL } = useLanguage();
   const { colors: C, shadow } = useTheme();
+  const { hasFeature } = useSubscription();
   const insets = useSafeAreaInsets();
   const S = useMemo(() => styles(C, shadow), [C, shadow]);
 
@@ -459,6 +461,13 @@ export default function PerformanceScreen() {
   }
 
   async function handleShareReport() {
+    if (!hasFeature("export_reports")) {
+      Alert.alert(t("upgradeRequired"), t("upgradeToUnlock"), [
+        { text: t("upgrade"), onPress: () => router.push("/paywall" as any) },
+        { text: t("later"), style: "cancel" },
+      ]);
+      return;
+    }
     const message =
       `📊 ${t("performanceReport")}\n` +
       `${t("collectionRate")}: ${collectionRate}%\n` +
