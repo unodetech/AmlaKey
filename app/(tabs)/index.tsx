@@ -397,7 +397,7 @@ export default function DashboardScreen() {
             { emoji: "🏠", label: t("addProperty"), onPress: () => router.push("/(tabs)/properties") },
             { emoji: "💳", label: t("collectPayment"), onPress: () => router.push("/(tabs)/tenants") },
             { emoji: "🧾", label: t("addExpense"), onPress: () => router.push("/(tabs)/expenses") },
-            { emoji: "🔔", label: t("broadcastMessage"), onPress: () => { if (!hasFeature("whatsapp_broadcast")) { Alert.alert(t("upgradeRequired"), t("upgradeToUnlock"), [{ text: t("upgrade"), onPress: () => router.push("/paywall" as any) }, { text: t("later"), style: "cancel" }]); return; } setBroadcastFilter("all"); setBroadcastSelected(null); setBroadcastMsgType("auto"); setBroadcastCustomMsg(""); setBroadcastModal(true); } },
+            { emoji: "🔔", label: t("broadcastMessage"), onPress: () => { setBroadcastFilter("all"); setBroadcastSelected(null); setBroadcastMsgType("auto"); setBroadcastCustomMsg(""); setBroadcastModal(true); } },
           ] as const).map((item, i) => (
             <TouchableOpacity key={i} style={S.quickActionCard} onPress={item.onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={item.label}>
               <Text style={S.quickActionEmoji}>{item.emoji}</Text>

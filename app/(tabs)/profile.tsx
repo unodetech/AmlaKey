@@ -151,7 +151,7 @@ export default function ProfileScreen() {
         onPress={() => router.push("/paywall" as any)}
         activeOpacity={0.7}
       >
-        <Text style={{ fontSize: 22 }}>{isPro ? "✅" : "👑"}</Text>
+        <Text style={{ fontSize: 22 }}>{isPro ? "✅" : "💰"}</Text>
         <View style={{ flex: 1, marginHorizontal: 12 }}>
           <Text style={[{ fontSize: 15, fontWeight: "700", color: "#FFF" }, isRTL && { textAlign: "right" }]}>
             {t("currentPlan")}: {isPro ? t("proPlan") : t("freePlan")}

@@ -21,7 +21,6 @@ const { width: SW } = Dimensions.get("window");
 const PRO_FEATURES = [
   { icon: "🏢", key: "featureUnlimitedProperties", descKey: "featureUnlimitedPropertiesDesc" },
   { icon: "🏠", key: "featureUnlimitedUnits", descKey: "featureUnlimitedUnitsDesc" },
-  { icon: "💬", key: "featureWhatsAppBroadcast", descKey: "featureWhatsAppBroadcastDesc" },
   { icon: "📊", key: "featureExportReports", descKey: "featureExportReportsDesc" },
   { icon: "🌙", key: "featureDarkMode", descKey: "featureDarkModeDesc" },
 ] as const;
@@ -103,7 +102,7 @@ export default function PaywallScreen() {
         <TouchableOpacity style={S.closeBtn} onPress={() => router.back()}>
           <Text style={S.closeBtnText}>✕</Text>
         </TouchableOpacity>
-        <Text style={S.crown}>👑</Text>
+        <Text style={S.crown}>💰</Text>
         <Text style={S.headerTitle}>{t("subscriptionTitle")}</Text>
         <Text style={S.headerSubtitle}>{t("upgradeToUnlock")}</Text>
       </View>
@@ -141,7 +140,7 @@ export default function PaywallScreen() {
         {/* Pro features */}
         <View style={[S.section, { backgroundColor: C.surface }]}>
           <Text style={[S.sectionTitle, { color: C.text }, isRTL && { textAlign: "right" }]}>
-            👑 {t("proFeatures")}
+            💰 {t("proFeatures")}
           </Text>
           {PRO_FEATURES.map((f) => (
             <View key={f.key} style={[S.featureRow, isRTL && S.featureRowRTL]}>

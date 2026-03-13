@@ -13,7 +13,7 @@ const PRO_ENTITLEMENT = "pro";
 // ── Free-tier limits ──────────────────────────────────────────────────────────
 export const FREE_LIMITS = {
   maxProperties: 3,
-  maxUnitsPerProperty: 10,
+  maxUnitsPerProperty: 5,
 } as const;
 
 // ── Pro features list (for UI display) ────────────────────────────────────────
