@@ -1,31 +1,325 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Amlakey - Your Smart Property Manager</title>
+  <title>Amlakey - Your Smart Property Manager | أملاكي</title>
+  <meta name="description" content="Amlakey is the smart property management app for Saudi landlords. Track rent, manage tenants, and grow your portfolio. Available on the App Store.">
+  <meta name="keywords" content="property management, Saudi Arabia, landlord app, rent tracker, tenant management, أملاكي, إدارة العقارات">
+  <link rel="icon" type="image/png" href="favicon.png">
   <style>
-    :root { --primary: #0284C7; --bg: #F8FAFC; --text: #1E293B; --muted: #64748B; }
+    :root {
+      --primary: #0D9488;
+      --primary-dark: #0F766E;
+      --bg: #F1F5F9;
+      --surface: #FFFFFF;
+      --text: #0F172A;
+      --muted: #64748B;
+      --accent: #0EA5E9;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-    .container { text-align: center; padding: 40px 20px; }
-    h1 { font-size: 36px; color: var(--primary); margin-bottom: 8px; }
-    .subtitle { color: var(--muted); font-size: 16px; margin-bottom: 40px; }
-    .links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-    .links a { display: inline-block; padding: 12px 32px; border-radius: 12px; text-decoration: none; font-size: 15px; font-weight: 600; background: var(--primary); color: white; transition: opacity 0.2s; }
-    .links a:hover { opacity: 0.85; }
-    footer { position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; color: var(--muted); font-size: 13px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* Language toggle */
+    .lang-toggle {
+      position: fixed; top: 16px; right: 16px; z-index: 100;
+      background: var(--surface); border: 1px solid #E2E8F0; border-radius: 10px;
+      padding: 6px 14px; cursor: pointer; font-size: 14px; font-weight: 600;
+      color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: all 0.2s;
+    }
+    .lang-toggle:hover { background: var(--primary); color: white; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 100px 24px 60px;
+      background: linear-gradient(135deg, #0D9488 0%, #0EA5E9 100%);
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
+      height: 60px; background: var(--bg);
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    }
+    .hero-icon { font-size: 64px; margin-bottom: 16px; }
+    .hero h1 { font-size: 48px; font-weight: 800; margin-bottom: 8px; letter-spacing: -1px; }
+    .hero .subtitle { font-size: 20px; opacity: 0.9; margin-bottom: 32px; font-weight: 500; }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: white; color: var(--primary-dark); padding: 14px 32px;
+      border-radius: 14px; font-size: 17px; font-weight: 700;
+      text-decoration: none; transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+    .hero-cta img { height: 28px; }
+
+    /* Features */
+    .features { padding: 80px 0; }
+    .features h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+    .features .section-sub { text-align: center; color: var(--muted); font-size: 16px; margin-bottom: 48px; }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--surface); border-radius: 16px; padding: 28px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06); transition: transform 0.2s;
+    }
+    .feature-card:hover { transform: translateY(-4px); }
+    .feature-icon { font-size: 36px; margin-bottom: 12px; }
+    .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .feature-card p { color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+    /* Pricing */
+    .pricing { padding: 80px 0; background: white; }
+    .pricing h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+    .pricing .section-sub { text-align: center; color: var(--muted); font-size: 16px; margin-bottom: 48px; }
+    .pricing-cards { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+    .price-card {
+      background: var(--bg); border-radius: 20px; padding: 32px; width: 320px;
+      text-align: center; position: relative; border: 2px solid transparent;
+    }
+    .price-card.featured { border-color: var(--primary); background: white; box-shadow: 0 8px 32px rgba(13,148,136,0.15); }
+    .price-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--primary); color: white; padding: 4px 16px; border-radius: 20px;
+      font-size: 12px; font-weight: 700;
+    }
+    .price-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .price-amount { font-size: 40px; font-weight: 800; color: var(--primary); }
+    .price-amount span { font-size: 16px; font-weight: 500; color: var(--muted); }
+    .price-list { list-style: none; margin: 24px 0; text-align: left; }
+    .price-list li { padding: 8px 0; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .price-list li::before { content: '✓'; color: var(--primary); font-weight: 700; }
+    .price-list li.disabled { color: var(--muted); text-decoration: line-through; }
+    .price-list li.disabled::before { content: '✕'; color: #CBD5E1; }
+
+    /* Bilingual */
+    .bilingual { padding: 60px 0; text-align: center; }
+    .bilingual h2 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .bilingual p { color: var(--muted); font-size: 16px; margin-bottom: 24px; }
+    .lang-badges { display: flex; gap: 16px; justify-content: center; }
+    .lang-badge {
+      background: var(--surface); border-radius: 12px; padding: 16px 32px;
+      font-size: 18px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    /* Footer */
+    footer {
+      background: #0F172A; color: rgba(255,255,255,0.7); padding: 40px 24px;
+      text-align: center; font-size: 14px;
+    }
+    footer a { color: rgba(255,255,255,0.9); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .footer-brand { font-size: 20px; font-weight: 700; color: white; margin-bottom: 8px; }
+
+    /* RTL support */
+    [dir="rtl"] { font-family: -apple-system, BlinkMacSystemFont, 'SF Arabic', 'Segoe UI', Tahoma, sans-serif; }
+    [dir="rtl"] .price-list { text-align: right; }
+    [dir="rtl"] .price-list li { flex-direction: row-reverse; }
+    [dir="rtl"] .lang-toggle { right: auto; left: 16px; }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 32px; }
+      .hero .subtitle { font-size: 16px; }
+      .features h2, .pricing h2, .bilingual h2 { font-size: 24px; }
+      .price-card { width: 100%; }
+    }
+
+    /* Hidden class for language switching */
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
+
+<button class="lang-toggle" onclick="toggleLang()">العربية</button>
+
+<!-- HERO -->
+<section class="hero">
   <div class="container">
-    <h1>Amlakey</h1>
-    <p class="subtitle">Your Smart Property Manager</p>
-    <div class="links">
-      <a href="privacy.html">Privacy Policy</a>
-      <a href="terms.html">Terms of Service</a>
+    <div class="hero-icon">🏠</div>
+    <h1 class="en">Amlakey</h1>
+    <h1 class="ar hidden">أملاكي</h1>
+    <p class="subtitle en">Your Smart Property Manager</p>
+    <p class="subtitle ar hidden">مدير عقاراتك الذكي</p>
+    <a href="#" class="hero-cta en">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+      Download on App Store
+    </a>
+    <a href="#" class="hero-cta ar hidden">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+      حمّل من App Store
+    </a>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="container">
+    <h2 class="en">Everything You Need to Manage Properties</h2>
+    <h2 class="ar hidden">كل ما تحتاجه لإدارة عقاراتك</h2>
+    <p class="section-sub en">Built for Saudi landlords who want simplicity and control</p>
+    <p class="section-sub ar hidden">مصمم للمُلّاك السعوديين الذين يريدون البساطة والتحكم</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🏢</div>
+        <h3 class="en">Property Portfolio</h3>
+        <h3 class="ar hidden">محفظة العقارات</h3>
+        <p class="en">Manage apartments, villas, commercial buildings, and land parcels all in one place.</p>
+        <p class="ar hidden">أدر الشقق والفلل والمباني التجارية والأراضي في مكان واحد.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👥</div>
+        <h3 class="en">Tenant Management</h3>
+        <h3 class="ar hidden">إدارة المستأجرين</h3>
+        <p class="en">Track tenant details, lease dates, and contact information with ease.</p>
+        <p class="ar hidden">تتبع بيانات المستأجرين وتواريخ العقود ومعلومات التواصل بسهولة.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💰</div>
+        <h3 class="en">Payment Tracking</h3>
+        <h3 class="ar hidden">تتبع المدفوعات</h3>
+        <p class="en">Record rent payments, track overdue amounts, and never miss a collection.</p>
+        <p class="ar hidden">سجّل دفعات الإيجار وتتبع المبالغ المتأخرة ولا تفوّت أي تحصيل.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3 class="en">Performance Reports</h3>
+        <h3 class="ar hidden">تقارير الأداء</h3>
+        <p class="en">See collection rates, revenue breakdowns, and financial performance at a glance.</p>
+        <p class="ar hidden">شاهد معدلات التحصيل وتفاصيل الإيرادات والأداء المالي بنظرة واحدة.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3 class="en">Ejar Integration</h3>
+        <h3 class="ar hidden">تكامل مع إيجار</h3>
+        <p class="en">Import your tenant data directly from the Ejar platform. No manual entry needed.</p>
+        <p class="ar hidden">استورد بيانات المستأجرين مباشرة من منصة إيجار. بدون إدخال يدوي.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <h3 class="en">Smart Notifications</h3>
+        <h3 class="ar hidden">إشعارات ذكية</h3>
+        <p class="en">Get alerts for overdue payments, expiring leases, and important reminders.</p>
+        <p class="ar hidden">احصل على تنبيهات للمدفوعات المتأخرة والعقود المنتهية والتذكيرات المهمة.</p>
+      </div>
     </div>
   </div>
-  <footer>&copy; 2026 Amlakey. All rights reserved.</footer>
+</section>
+
+<!-- PRICING -->
+<section class="pricing">
+  <div class="container">
+    <h2 class="en">Simple, Transparent Pricing</h2>
+    <h2 class="ar hidden">أسعار بسيطة وشفافة</h2>
+    <p class="section-sub en">Start free, upgrade when you need more</p>
+    <p class="section-sub ar hidden">ابدأ مجاناً، وقم بالترقية عند الحاجة</p>
+    <div class="pricing-cards">
+      <div class="price-card">
+        <h3 class="en">Free</h3>
+        <h3 class="ar hidden">مجاني</h3>
+        <div class="price-amount">0 <span>SAR</span></div>
+        <ul class="price-list">
+          <li class="en">Up to 3 properties</li>
+          <li class="ar hidden">حتى 3 عقارات</li>
+          <li class="en">5 units per property</li>
+          <li class="ar hidden">5 وحدات لكل عقار</li>
+          <li class="en">Payment tracking</li>
+          <li class="ar hidden">تتبع المدفوعات</li>
+          <li class="en">Notifications</li>
+          <li class="ar hidden">الإشعارات</li>
+          <li class="en">Ejar import</li>
+          <li class="ar hidden">استيراد إيجار</li>
+          <li class="en disabled">Export reports</li>
+          <li class="ar hidden disabled">تصدير التقارير</li>
+          <li class="en disabled">Dark mode</li>
+          <li class="ar hidden disabled">الوضع الداكن</li>
+        </ul>
+      </div>
+      <div class="price-card featured">
+        <div class="price-badge en">BEST VALUE</div>
+        <div class="price-badge ar hidden">الأفضل قيمة</div>
+        <h3 class="en">Pro</h3>
+        <h3 class="ar hidden">برو</h3>
+        <div class="price-amount">9.99 <span class="en">SAR/mo</span><span class="ar hidden">ر.س/شهر</span></div>
+        <p style="color:var(--primary);font-size:13px;font-weight:600;margin-top:4px" class="en">or 59 SAR/year (save 50%)</p>
+        <p style="color:var(--primary);font-size:13px;font-weight:600;margin-top:4px" class="ar hidden">أو 59 ر.س/سنة (وفر 50%)</p>
+        <ul class="price-list">
+          <li class="en">Unlimited properties</li>
+          <li class="ar hidden">عقارات غير محدودة</li>
+          <li class="en">Unlimited units</li>
+          <li class="ar hidden">وحدات غير محدودة</li>
+          <li class="en">Payment tracking</li>
+          <li class="ar hidden">تتبع المدفوعات</li>
+          <li class="en">Notifications</li>
+          <li class="ar hidden">الإشعارات</li>
+          <li class="en">Ejar import</li>
+          <li class="ar hidden">استيراد إيجار</li>
+          <li class="en">Export reports (PDF & Excel)</li>
+          <li class="ar hidden">تصدير التقارير (PDF و Excel)</li>
+          <li class="en">Dark mode</li>
+          <li class="ar hidden">الوضع الداكن</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BILINGUAL -->
+<section class="bilingual">
+  <div class="container">
+    <h2 class="en">Fully Bilingual</h2>
+    <h2 class="ar hidden">ثنائي اللغة بالكامل</h2>
+    <p class="en">Switch between English and Arabic with full RTL support</p>
+    <p class="ar hidden">تبديل بين الإنجليزية والعربية مع دعم كامل للاتجاه من اليمين لليسار</p>
+    <div class="lang-badges">
+      <div class="lang-badge">🇺🇸 English</div>
+      <div class="lang-badge">🇸🇦 العربية</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-brand">Amlakey | أملاكي</div>
+    <p style="margin-bottom:16px" class="en">Your Smart Property Manager</p>
+    <p style="margin-bottom:16px" class="ar hidden">مدير عقاراتك الذكي</p>
+    <div class="footer-links">
+      <a href="privacy.html" class="en">Privacy Policy</a>
+      <a href="privacy.html" class="ar hidden">سياسة الخصوصية</a>
+      <a href="terms.html" class="en">Terms of Service</a>
+      <a href="terms.html" class="ar hidden">شروط الخدمة</a>
+      <a href="mailto:support@amlakeyapp.com" class="en">Contact Us</a>
+      <a href="mailto:support@amlakeyapp.com" class="ar hidden">تواصل معنا</a>
+    </div>
+    <p>&copy; 2026 Amlakey. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+  let isAr = false;
+  function toggleLang() {
+    isAr = !isAr;
+    document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+    document.documentElement.lang = isAr ? 'ar' : 'en';
+    document.querySelector('.lang-toggle').textContent = isAr ? 'English' : 'العربية';
+    document.querySelectorAll('.en').forEach(el => el.classList.toggle('hidden', isAr));
+    document.querySelectorAll('.ar').forEach(el => el.classList.toggle('hidden', !isAr));
+  }
+</script>
+
 </body>
 </html>

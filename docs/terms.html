@@ -3,156 +3,249 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Amlakey - Terms of Service</title>
+  <title>Amlakey - Terms of Service | أملاكي - شروط الخدمة</title>
+  <meta name="description" content="Amlakey Terms of Service - Rules and guidelines for using our property management app.">
+  <link rel="icon" type="image/png" href="favicon.png">
   <style>
-    :root { --primary: #0284C7; --bg: #F8FAFC; --card: #FFFFFF; --text: #1E293B; --muted: #64748B; --border: #E2E8F0; }
+    :root {
+      --primary: #0D9488;
+      --primary-dark: #0F766E;
+      --bg: #F1F5F9;
+      --surface: #FFFFFF;
+      --text: #0F172A;
+      --muted: #64748B;
+      --border: #E2E8F0;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
-    .container { max-width: 720px; margin: 0 auto; padding: 40px 20px 80px; }
-    .logo { text-align: center; margin-bottom: 32px; }
-    .logo h1 { font-size: 28px; color: var(--primary); }
-    .logo p { color: var(--muted); font-size: 14px; margin-top: 4px; }
-    .updated { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
-    .section { background: var(--card); border-radius: 12px; padding: 24px; margin-bottom: 16px; border: 1px solid var(--border); }
-    .section h2 { font-size: 18px; color: var(--primary); margin-bottom: 12px; }
-    .section p { font-size: 15px; color: var(--text); }
-    .lang-switch { text-align: center; margin-bottom: 24px; }
-    .lang-switch a { display: inline-block; padding: 8px 20px; border-radius: 20px; text-decoration: none; font-size: 14px; font-weight: 600; margin: 0 4px; }
-    .lang-switch a.active { background: var(--primary); color: white; }
-    .lang-switch a:not(.active) { background: var(--card); color: var(--primary); border: 1px solid var(--border); }
-    footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 40px; }
-    .ar { display: none; }
-    body.rtl .en { display: none; }
-    body.rtl .ar { display: block; }
-    body.rtl { direction: rtl; text-align: right; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.7;
+    }
+
+    /* Header */
+    .page-header {
+      background: linear-gradient(135deg, #0D9488 0%, #0EA5E9 100%);
+      color: white; text-align: center; padding: 60px 24px 40px; position: relative;
+    }
+    .page-header::after {
+      content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
+      height: 40px; background: var(--bg);
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    }
+    .page-header h1 { font-size: 32px; font-weight: 800; margin-bottom: 4px; }
+    .page-header p { font-size: 16px; opacity: 0.9; font-weight: 500; }
+    .back-home {
+      position: absolute; top: 16px; left: 16px;
+      color: white; text-decoration: none; font-size: 14px; font-weight: 600;
+      background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 10px;
+      transition: background 0.2s;
+    }
+    .back-home:hover { background: rgba(255,255,255,0.35); }
+
+    /* Language toggle */
+    .lang-toggle {
+      position: absolute; top: 16px; right: 16px;
+      background: rgba(255,255,255,0.2); border: none; border-radius: 10px;
+      padding: 6px 14px; cursor: pointer; font-size: 14px; font-weight: 600;
+      color: white; transition: background 0.2s;
+    }
+    .lang-toggle:hover { background: rgba(255,255,255,0.35); }
+
+    /* Content */
+    .container { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+    .updated { color: var(--muted); font-size: 13px; margin-bottom: 24px; text-align: center; }
+    .section {
+      background: var(--surface); border-radius: 14px; padding: 24px;
+      margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .section h2 { font-size: 18px; color: var(--primary); margin-bottom: 12px; font-weight: 700; }
+    .section p { font-size: 15px; color: var(--text); line-height: 1.7; }
+    .section a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .section a:hover { text-decoration: underline; }
+
+    /* Footer */
+    footer {
+      background: #0F172A; color: rgba(255,255,255,0.7); padding: 32px 24px;
+      text-align: center; font-size: 14px;
+    }
+    footer a { color: rgba(255,255,255,0.9); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+
+    /* RTL */
+    [dir="rtl"] { font-family: -apple-system, BlinkMacSystemFont, 'SF Arabic', 'Segoe UI', Tahoma, sans-serif; }
+    [dir="rtl"] .back-home { left: auto; right: auto; left: 16px; }
+    [dir="rtl"] .lang-toggle { right: auto; left: auto; right: 16px; }
+
+    /* Hidden */
+    .hidden { display: none !important; }
+
+    @media (max-width: 640px) {
+      .page-header h1 { font-size: 24px; }
+      .page-header { padding: 50px 16px 32px; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">
-      <h1>Amlakey</h1>
-      <p class="en">Terms of Service</p>
-      <p class="ar">شروط الخدمة</p>
-    </div>
 
-    <div class="lang-switch">
-      <a href="#" id="btnEn" class="active" onclick="setLang('en')">English</a>
-      <a href="#" id="btnAr" onclick="setLang('ar')">العربية</a>
-    </div>
+<header class="page-header">
+  <a href="index.html" class="back-home en">← Home</a>
+  <a href="index.html" class="back-home ar hidden">→ الرئيسية</a>
+  <button class="lang-toggle" onclick="toggleLang()">العربية</button>
+  <h1 class="en">Terms of Service</h1>
+  <h1 class="ar hidden">شروط الخدمة</h1>
+  <p class="en">Amlakey - Your Smart Property Manager</p>
+  <p class="ar hidden">أملاكي - مدير عقاراتك الذكي</p>
+</header>
 
-    <!-- English -->
-    <div class="en">
-      <p class="updated">Last Updated: March 2026</p>
+<div class="container">
+  <p class="updated en">Last Updated: March 2026</p>
+  <p class="updated ar hidden">آخر تحديث: مارس 2026</p>
 
-      <div class="section">
-        <h2>Introduction</h2>
-        <p>Welcome to Amlakey. These Terms of Service govern your use of our property management application. By accessing or using Amlakey, you agree to be bound by these terms. If you do not agree, please do not use the application.</p>
-      </div>
-
-      <div class="section">
-        <h2>Account Responsibilities</h2>
-        <p>You are responsible for maintaining the confidentiality of your account credentials. You must provide accurate and complete information during registration. You agree to notify us immediately of any unauthorized access to your account. You must be at least 18 years old to create an account.</p>
-      </div>
-
-      <div class="section">
-        <h2>Acceptable Use</h2>
-        <p>You agree to use Amlakey only for lawful property management purposes. You shall not misuse the platform to store false tenant information, manipulate financial records, or engage in any fraudulent activity. You may not attempt to reverse-engineer, modify, or distribute any part of the application.</p>
-      </div>
-
-      <div class="section">
-        <h2>Payments &amp; Financial Data</h2>
-        <p>Amlakey facilitates the recording and tracking of rental payments and expenses. All financial data entered is your responsibility to verify for accuracy. Amlakey is not a financial institution and does not process actual monetary transactions. We are not liable for any financial decisions made based on data within the application.</p>
-      </div>
-
-      <div class="section">
-        <h2>Data &amp; Privacy</h2>
-        <p>Your use of Amlakey is also governed by our <a href="privacy.html">Privacy Policy</a>. By using the application, you consent to the collection and use of your data as described in the Privacy Policy. You retain ownership of all property and tenant data you enter into the application.</p>
-      </div>
-
-      <div class="section">
-        <h2>Termination</h2>
-        <p>We reserve the right to suspend or terminate your account if you violate these terms. You may delete your account at any time through the application settings. Upon termination, your data may be retained for a reasonable period for backup and legal compliance purposes.</p>
-      </div>
-
-      <div class="section">
-        <h2>Limitation of Liability</h2>
-        <p>Amlakey is provided on an "as is" basis without warranties of any kind. We shall not be liable for any indirect, incidental, or consequential damages arising from your use of the application. Our total liability shall not exceed the amount paid by you for the service in the preceding 12 months.</p>
-      </div>
-
-      <div class="section">
-        <h2>Changes to Terms</h2>
-        <p>We may update these terms from time to time. We will notify you of significant changes through the application or via email. Continued use of Amlakey after changes constitutes acceptance of the updated terms.</p>
-      </div>
-
-      <div class="section">
-        <h2>Contact Us</h2>
-        <p>If you have questions about these Terms of Service, please contact us at <a href="mailto:support@amlakey.com">support@amlakey.com</a>.</p>
-      </div>
-    </div>
-
-    <!-- Arabic -->
-    <div class="ar">
-      <p class="updated">آخر تحديث: مارس 2026</p>
-
-      <div class="section">
-        <h2>المقدمة</h2>
-        <p>مرحباً بك في أملاكي. تحكم شروط الخدمة هذه استخدامك لتطبيق إدارة العقارات. باستخدامك لأملاكي، فإنك توافق على الالتزام بهذه الشروط. إذا كنت لا توافق، يرجى عدم استخدام التطبيق.</p>
-      </div>
-
-      <div class="section">
-        <h2>مسؤوليات الحساب</h2>
-        <p>أنت مسؤول عن الحفاظ على سرية بيانات حسابك. يجب عليك تقديم معلومات دقيقة وكاملة أثناء التسجيل. توافق على إخطارنا فوراً بأي وصول غير مصرح به إلى حسابك. يجب أن يكون عمرك 18 عاماً على الأقل لإنشاء حساب.</p>
-      </div>
-
-      <div class="section">
-        <h2>الاستخدام المقبول</h2>
-        <p>توافق على استخدام أملاكي فقط لأغراض إدارة العقارات المشروعة. لا يجوز لك إساءة استخدام المنصة لتخزين معلومات مستأجرين خاطئة أو التلاعب بالسجلات المالية أو الانخراط في أي نشاط احتيالي. لا يجوز لك محاولة الهندسة العكسية أو التعديل أو توزيع أي جزء من التطبيق.</p>
-      </div>
-
-      <div class="section">
-        <h2>المدفوعات والبيانات المالية</h2>
-        <p>يسهل أملاكي تسجيل وتتبع مدفوعات الإيجار والمصاريف. جميع البيانات المالية المدخلة هي مسؤوليتك للتحقق من دقتها. أملاكي ليس مؤسسة مالية ولا يعالج معاملات نقدية فعلية. نحن غير مسؤولين عن أي قرارات مالية تتخذ بناءً على البيانات داخل التطبيق.</p>
-      </div>
-
-      <div class="section">
-        <h2>البيانات والخصوصية</h2>
-        <p>يخضع استخدامك لأملاكي أيضاً <a href="privacy.html">لسياسة الخصوصية</a> الخاصة بنا. باستخدام التطبيق، فإنك توافق على جمع واستخدام بياناتك كما هو موضح في سياسة الخصوصية. تحتفظ بملكية جميع بيانات العقارات والمستأجرين التي تدخلها في التطبيق.</p>
-      </div>
-
-      <div class="section">
-        <h2>الإنهاء</h2>
-        <p>نحتفظ بالحق في تعليق أو إنهاء حسابك إذا انتهكت هذه الشروط. يمكنك حذف حسابك في أي وقت من خلال إعدادات التطبيق. عند الإنهاء، قد يتم الاحتفاظ ببياناتك لفترة معقولة لأغراض النسخ الاحتياطي والامتثال القانوني.</p>
-      </div>
-
-      <div class="section">
-        <h2>تحديد المسؤولية</h2>
-        <p>يتم تقديم أملاكي "كما هو" بدون ضمانات من أي نوع. لن نكون مسؤولين عن أي أضرار غير مباشرة أو عرضية أو تبعية ناتجة عن استخدامك للتطبيق. لن تتجاوز مسؤوليتنا الإجمالية المبلغ الذي دفعته مقابل الخدمة في الأشهر الـ 12 السابقة.</p>
-      </div>
-
-      <div class="section">
-        <h2>التغييرات على الشروط</h2>
-        <p>قد نحدث هذه الشروط من وقت لآخر. سنبلغك بالتغييرات المهمة من خلال التطبيق أو عبر البريد الإلكتروني. استمرار استخدام أملاكي بعد التغييرات يعني قبول الشروط المحدثة.</p>
-      </div>
-
-      <div class="section">
-        <h2>اتصل بنا</h2>
-        <p>إذا كانت لديك أسئلة حول شروط الخدمة هذه، يرجى التواصل معنا على <a href="mailto:support@amlakey.com">support@amlakey.com</a>.</p>
-      </div>
-    </div>
-
-    <footer>
-      <p>&copy; 2026 Amlakey. All rights reserved.</p>
-    </footer>
+  <!-- EN: Introduction -->
+  <div class="section en">
+    <h2>Introduction</h2>
+    <p>Welcome to Amlakey. These Terms of Service govern your use of our property management application. By accessing or using Amlakey, you agree to be bound by these terms. If you do not agree, please do not use the application.</p>
+  </div>
+  <!-- AR: Introduction -->
+  <div class="section ar hidden">
+    <h2>المقدمة</h2>
+    <p>مرحباً بك في أملاكي. تحكم شروط الخدمة هذه استخدامك لتطبيق إدارة العقارات. باستخدامك لأملاكي، فإنك توافق على الالتزام بهذه الشروط. إذا كنت لا توافق، يرجى عدم استخدام التطبيق.</p>
   </div>
 
-  <script>
-    function setLang(lang) {
-      document.body.classList.toggle('rtl', lang === 'ar');
-      document.getElementById('btnEn').classList.toggle('active', lang === 'en');
-      document.getElementById('btnAr').classList.toggle('active', lang === 'ar');
-      document.documentElement.lang = lang;
-      document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    }
-  </script>
+  <!-- EN: Account -->
+  <div class="section en">
+    <h2>Account Responsibilities</h2>
+    <p>You are responsible for maintaining the confidentiality of your account credentials. You must provide accurate and complete information during registration. You agree to notify us immediately of any unauthorized access to your account. You must be at least 18 years old to create an account.</p>
+  </div>
+  <!-- AR: Account -->
+  <div class="section ar hidden">
+    <h2>مسؤوليات الحساب</h2>
+    <p>أنت مسؤول عن الحفاظ على سرية بيانات حسابك. يجب عليك تقديم معلومات دقيقة وكاملة أثناء التسجيل. توافق على إخطارنا فوراً بأي وصول غير مصرح به إلى حسابك. يجب أن يكون عمرك 18 عاماً على الأقل لإنشاء حساب.</p>
+  </div>
+
+  <!-- EN: Acceptable Use -->
+  <div class="section en">
+    <h2>Acceptable Use</h2>
+    <p>You agree to use Amlakey only for lawful property management purposes. You shall not misuse the platform to store false tenant information, manipulate financial records, or engage in any fraudulent activity. You may not attempt to reverse-engineer, modify, or distribute any part of the application.</p>
+  </div>
+  <!-- AR: Acceptable Use -->
+  <div class="section ar hidden">
+    <h2>الاستخدام المقبول</h2>
+    <p>توافق على استخدام أملاكي فقط لأغراض إدارة العقارات المشروعة. لا يجوز لك إساءة استخدام المنصة لتخزين معلومات مستأجرين خاطئة أو التلاعب بالسجلات المالية أو الانخراط في أي نشاط احتيالي. لا يجوز لك محاولة الهندسة العكسية أو التعديل أو توزيع أي جزء من التطبيق.</p>
+  </div>
+
+  <!-- EN: Subscriptions -->
+  <div class="section en">
+    <h2>Subscriptions &amp; In-App Purchases</h2>
+    <p>Amlakey offers a free tier and optional Pro subscription. Pro subscriptions are available as monthly (9.99 SAR/month) or annual (59 SAR/year) plans. Subscriptions are billed through the Apple App Store and auto-renew unless cancelled at least 24 hours before the end of the current period. You can manage or cancel your subscription in your Apple ID account settings. Prices are subject to change with notice through the application.</p>
+  </div>
+  <!-- AR: Subscriptions -->
+  <div class="section ar hidden">
+    <h2>الاشتراكات والمشتريات داخل التطبيق</h2>
+    <p>يوفر أملاكي باقة مجانية واشتراك برو اختياري. اشتراكات برو متاحة كخطط شهرية (9.99 ر.س/شهر) أو سنوية (59 ر.س/سنة). يتم فوترة الاشتراكات من خلال متجر تطبيقات Apple وتتجدد تلقائياً ما لم يتم إلغاؤها قبل 24 ساعة على الأقل من نهاية الفترة الحالية. يمكنك إدارة أو إلغاء اشتراكك في إعدادات حساب Apple الخاص بك. الأسعار قابلة للتغيير مع إشعار من خلال التطبيق.</p>
+  </div>
+
+  <!-- EN: Payments -->
+  <div class="section en">
+    <h2>Payments &amp; Financial Data</h2>
+    <p>Amlakey facilitates the recording and tracking of rental payments and expenses. All financial data entered is your responsibility to verify for accuracy. Amlakey is not a financial institution and does not process actual monetary transactions. We are not liable for any financial decisions made based on data within the application.</p>
+  </div>
+  <!-- AR: Payments -->
+  <div class="section ar hidden">
+    <h2>المدفوعات والبيانات المالية</h2>
+    <p>يسهل أملاكي تسجيل وتتبع مدفوعات الإيجار والمصاريف. جميع البيانات المالية المدخلة هي مسؤوليتك للتحقق من دقتها. أملاكي ليس مؤسسة مالية ولا يعالج معاملات نقدية فعلية. نحن غير مسؤولين عن أي قرارات مالية تتخذ بناءً على البيانات داخل التطبيق.</p>
+  </div>
+
+  <!-- EN: Privacy -->
+  <div class="section en">
+    <h2>Data &amp; Privacy</h2>
+    <p>Your use of Amlakey is also governed by our <a href="privacy.html">Privacy Policy</a>. By using the application, you consent to the collection and use of your data as described in the Privacy Policy. You retain ownership of all property and tenant data you enter into the application.</p>
+  </div>
+  <!-- AR: Privacy -->
+  <div class="section ar hidden">
+    <h2>البيانات والخصوصية</h2>
+    <p>يخضع استخدامك لأملاكي أيضاً <a href="privacy.html">لسياسة الخصوصية</a> الخاصة بنا. باستخدام التطبيق، فإنك توافق على جمع واستخدام بياناتك كما هو موضح في سياسة الخصوصية. تحتفظ بملكية جميع بيانات العقارات والمستأجرين التي تدخلها في التطبيق.</p>
+  </div>
+
+  <!-- EN: Termination -->
+  <div class="section en">
+    <h2>Termination</h2>
+    <p>We reserve the right to suspend or terminate your account if you violate these terms. You may delete your account at any time through the application settings. Upon termination, your data may be retained for a reasonable period for backup and legal compliance purposes.</p>
+  </div>
+  <!-- AR: Termination -->
+  <div class="section ar hidden">
+    <h2>الإنهاء</h2>
+    <p>نحتفظ بالحق في تعليق أو إنهاء حسابك إذا انتهكت هذه الشروط. يمكنك حذف حسابك في أي وقت من خلال إعدادات التطبيق. عند الإنهاء، قد يتم الاحتفاظ ببياناتك لفترة معقولة لأغراض النسخ الاحتياطي والامتثال القانوني.</p>
+  </div>
+
+  <!-- EN: Liability -->
+  <div class="section en">
+    <h2>Limitation of Liability</h2>
+    <p>Amlakey is provided on an "as is" basis without warranties of any kind. We shall not be liable for any indirect, incidental, or consequential damages arising from your use of the application. Our total liability shall not exceed the amount paid by you for the service in the preceding 12 months.</p>
+  </div>
+  <!-- AR: Liability -->
+  <div class="section ar hidden">
+    <h2>تحديد المسؤولية</h2>
+    <p>يتم تقديم أملاكي "كما هو" بدون ضمانات من أي نوع. لن نكون مسؤولين عن أي أضرار غير مباشرة أو عرضية أو تبعية ناتجة عن استخدامك للتطبيق. لن تتجاوز مسؤوليتنا الإجمالية المبلغ الذي دفعته مقابل الخدمة في الأشهر الـ 12 السابقة.</p>
+  </div>
+
+  <!-- EN: Governing Law -->
+  <div class="section en">
+    <h2>Governing Law</h2>
+    <p>These terms shall be governed by and construed in accordance with the laws of the Kingdom of Saudi Arabia. Any disputes arising from these terms shall be subject to the jurisdiction of Saudi Arabian courts.</p>
+  </div>
+  <!-- AR: Governing Law -->
+  <div class="section ar hidden">
+    <h2>القانون الحاكم</h2>
+    <p>تخضع هذه الشروط وتفسر وفقاً لقوانين المملكة العربية السعودية. أي نزاعات تنشأ عن هذه الشروط تخضع لاختصاص المحاكم السعودية.</p>
+  </div>
+
+  <!-- EN: Changes -->
+  <div class="section en">
+    <h2>Changes to Terms</h2>
+    <p>We may update these terms from time to time. We will notify you of significant changes through the application or via email. Continued use of Amlakey after changes constitutes acceptance of the updated terms.</p>
+  </div>
+  <!-- AR: Changes -->
+  <div class="section ar hidden">
+    <h2>التغييرات على الشروط</h2>
+    <p>قد نحدث هذه الشروط من وقت لآخر. سنبلغك بالتغييرات المهمة من خلال التطبيق أو عبر البريد الإلكتروني. استمرار استخدام أملاكي بعد التغييرات يعني قبول الشروط المحدثة.</p>
+  </div>
+
+  <!-- EN: Contact -->
+  <div class="section en">
+    <h2>Contact Us</h2>
+    <p>If you have questions about these Terms of Service, please contact us at <a href="mailto:support@amlakeyapp.com">support@amlakeyapp.com</a>.</p>
+  </div>
+  <!-- AR: Contact -->
+  <div class="section ar hidden">
+    <h2>اتصل بنا</h2>
+    <p>إذا كانت لديك أسئلة حول شروط الخدمة هذه، يرجى التواصل معنا على <a href="mailto:support@amlakeyapp.com">support@amlakeyapp.com</a>.</p>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="index.html" class="en">Home</a>
+    <a href="index.html" class="ar hidden">الرئيسية</a>
+    <a href="privacy.html" class="en">Privacy Policy</a>
+    <a href="privacy.html" class="ar hidden">سياسة الخصوصية</a>
+    <a href="mailto:support@amlakeyapp.com" class="en">Contact</a>
+    <a href="mailto:support@amlakeyapp.com" class="ar hidden">تواصل معنا</a>
+  </div>
+  <p>&copy; 2026 Amlakey. All rights reserved.</p>
+</footer>
+
+<script>
+  let isAr = false;
+  function toggleLang() {
+    isAr = !isAr;
+    document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+    document.documentElement.lang = isAr ? 'ar' : 'en';
+    document.querySelector('.lang-toggle').textContent = isAr ? 'English' : 'العربية';
+    document.querySelectorAll('.en').forEach(el => el.classList.toggle('hidden', isAr));
+    document.querySelectorAll('.ar').forEach(el => el.classList.toggle('hidden', !isAr));
+  }
+</script>
 </body>
 </html>
