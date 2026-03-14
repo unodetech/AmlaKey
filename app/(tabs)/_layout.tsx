@@ -276,9 +276,9 @@ export default function TabsLayout() {
       sceneContainerStyle={
         isDesktop
           ? {
-              [isRTL ? "marginRight" : "marginLeft"]: 240,
+              [isRTL ? "paddingRight" : "paddingLeft"]: 240,
               backgroundColor: colors.background,
-            }
+            } as any
           : undefined
       }
       screenOptions={{
