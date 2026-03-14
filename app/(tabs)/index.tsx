@@ -360,6 +360,8 @@ export default function DashboardScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.background }}>
       <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -376,7 +378,7 @@ export default function DashboardScreen() {
         )}
 
         {/* Header */}
-        <View style={[S.header, { paddingTop: insets.top + 10 }, isRTL && S.rowRev]}>
+        <View style={[S.header, { paddingTop: Platform.OS === "web" ? 10 : insets.top + 10 }, isRTL && S.rowRev]}>
           <View style={{ flex: 1 }}>
             <Text style={[S.greeting, isRTL && { textAlign: "right" }]}>{getGreeting(t)}{userName ? `, ${userName}` : ""} 👋</Text>
             <Text style={[S.subtitle, isRTL && { textAlign: "right" }]}>{t("hereIsYourOverview")}</Text>

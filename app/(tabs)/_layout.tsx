@@ -189,17 +189,24 @@ function CustomTabBar(props: any) {
   const { isRTL } = useLanguage();
 
   if (isDesktop) {
-    // Desktop: sidebar + content side by side
+    // Desktop: fixed sidebar — screen content is offset via sceneContainerStyle
     return (
       <View
-        style={{
-          flexDirection: isRTL ? "row-reverse" : "row",
-          flex: 1,
-          backgroundColor: colors.background,
-        }}
+        style={[
+          {
+            width: 240,
+            backgroundColor: colors.surface,
+          },
+          Platform.OS === "web" && ({
+            position: "fixed",
+            top: 0,
+            bottom: 0,
+            zIndex: 100,
+            [isRTL ? "right" : "left"]: 0,
+          } as any),
+        ]}
       >
         <DesktopSidebar {...props} />
-        <View style={{ flex: 1 }}>{props.children}</View>
       </View>
     );
   }
@@ -266,6 +273,14 @@ export default function TabsLayout() {
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
+      sceneContainerStyle={
+        isDesktop
+          ? {
+              [isRTL ? "marginRight" : "marginLeft"]: 240,
+              backgroundColor: colors.background,
+            }
+          : undefined
+      }
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.accent,

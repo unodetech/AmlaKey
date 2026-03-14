@@ -23,7 +23,7 @@ const FEATURES = [
   { emoji: "👥", titleKey: "landingFeat2Title", descKey: "landingFeat2Desc" },
   { emoji: "💰", titleKey: "landingFeat3Title", descKey: "landingFeat3Desc" },
   { emoji: "📊", titleKey: "landingFeat4Title", descKey: "landingFeat4Desc" },
-  { emoji: "📋", titleKey: "landingFeat5Title", descKey: "landingFeat5Desc" },
+  { emoji: "💬", titleKey: "landingFeat5Title", descKey: "landingFeat5Desc" },
   { emoji: "🔔", titleKey: "landingFeat6Title", descKey: "landingFeat6Desc" },
 ] as const;
 
@@ -274,24 +274,6 @@ export default function LandingPage() {
                       </View>
                     ))}
                 </View>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* ── Bilingual ────────────────────────── */}
-        <View style={s.section}>
-          <View style={s.sectionInner}>
-            <Text style={[s.sectionTitle, !isDesktop && { fontSize: 24 }]}>
-              {t("landingBilingualTitle")}
-            </Text>
-            <Text style={s.sectionSub}>{t("landingBilingualSub")}</Text>
-            <View style={s.langBadges}>
-              <View style={s.langBadge}>
-                <Text style={s.langBadgeText}>🇺🇸 English</Text>
-              </View>
-              <View style={s.langBadge}>
-                <Text style={s.langBadgeText}>🇸🇦 العربية</Text>
               </View>
             </View>
           </View>
@@ -631,25 +613,6 @@ const s = StyleSheet.create({
   priceDisabled: {
     color: C.muted,
     textDecorationLine: "line-through",
-  },
-
-  /* Bilingual */
-  langBadges: {
-    flexDirection: "row",
-    gap: 16,
-    justifyContent: "center",
-  },
-  langBadge: {
-    backgroundColor: C.surface,
-    borderRadius: 12,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    ...(isWeb && ({ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" } as any)),
-  },
-  langBadgeText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: C.text,
   },
 
   /* Footer */
