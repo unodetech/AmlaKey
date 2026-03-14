@@ -40,6 +40,7 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [resetCooldown, setResetCooldown] = useState(0);
 
   const handleForgotPassword = async () => {
     setError("");
@@ -48,12 +49,24 @@ export default function AuthScreen() {
       setError(t("authEnterEmail"));
       return;
     }
+    if (resetCooldown > 0) {
+      setError(isRTL ? `انتظر ${resetCooldown} ثانية قبل المحاولة مرة أخرى` : `Wait ${resetCooldown}s before trying again`);
+      return;
+    }
     setLoading(true);
     const err = await resetPassword(email.trim());
     if (err) {
       setError(err);
     } else {
       setSuccess(t("authResetSent"));
+      // 60-second cooldown to prevent spam
+      setResetCooldown(60);
+      const interval = setInterval(() => {
+        setResetCooldown((prev) => {
+          if (prev <= 1) { clearInterval(interval); return 0; }
+          return prev - 1;
+        });
+      }, 1000);
     }
     setLoading(false);
   };
@@ -287,8 +300,10 @@ export default function AuthScreen() {
             />
 
             {mode === "login" && (
-              <TouchableOpacity onPress={handleForgotPassword} style={{ alignSelf: isRTL ? "flex-start" : "flex-end", marginTop: 8 }} accessibilityRole="button" accessibilityLabel={t("authForgotPassword")}>
-                <Text style={{ color: C.primary, fontSize: 13, fontWeight: "600" }}>{t("authForgotPassword")}</Text>
+              <TouchableOpacity onPress={handleForgotPassword} disabled={resetCooldown > 0} style={{ alignSelf: isRTL ? "flex-start" : "flex-end", marginTop: 8, opacity: resetCooldown > 0 ? 0.5 : 1 }} accessibilityRole="button" accessibilityLabel={t("authForgotPassword")}>
+                <Text style={{ color: C.primary, fontSize: 13, fontWeight: "600" }}>
+                  {resetCooldown > 0 ? `${t("authForgotPassword")} (${resetCooldown}s)` : t("authForgotPassword")}
+                </Text>
               </TouchableOpacity>
             )}
 
