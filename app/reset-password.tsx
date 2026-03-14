@@ -13,11 +13,13 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
 import { spacing, radii } from "../constants/theme";
 
 export default function ResetPasswordScreen() {
+  const { clearPasswordRecovery } = useAuth();
   const { colors: C, shadow } = useTheme();
   const { t, isRTL } = useLanguage();
   const S = useMemo(() => styles(C, shadow), [C, shadow]);
@@ -52,8 +54,9 @@ export default function ResetPasswordScreen() {
       setError(err.message);
     } else {
       setSuccess(true);
-      // Navigate to main app after a brief delay
+      // Clear recovery flag and navigate to main app after a brief delay
       setTimeout(() => {
+        clearPasswordRecovery();
         router.replace("/(tabs)");
       }, 2000);
     }

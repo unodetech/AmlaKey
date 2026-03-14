@@ -60,7 +60,7 @@ const splashStyles = StyleSheet.create({
 });
 
 function RootNavigator() {
-  const { session, loading, signOut } = useAuth();
+  const { session, loading, signOut, isPasswordRecovery } = useAuth();
   const { colors } = useTheme();
   const { isRTL } = useLanguage();
 
@@ -106,8 +106,21 @@ function RootNavigator() {
     }
   }, [isRTL]);
 
+  // On web, handle Supabase auth error redirects (e.g. expired OTP in URL hash)
+  useEffect(() => {
+    if (!isWeb) return;
+    const hash = window.location.hash;
+    if (hash && hash.includes("error_code=otp_expired")) {
+      // Clear the hash and redirect to auth with a message
+      window.location.hash = "";
+      router.replace("/auth");
+    }
+  }, []);
+
   useEffect(() => {
     if (loading) return;
+    // Don't redirect away from reset-password page during password recovery
+    if (isPasswordRecovery) return;
     // Navigate to the correct screen based on auth state
     if (!session) {
       // Web: show landing page first; Native: go straight to auth

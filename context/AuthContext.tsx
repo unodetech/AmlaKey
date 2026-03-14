@@ -8,25 +8,30 @@ interface AuthCtx {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  isPasswordRecovery: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string) => Promise<{ error: string | null; userId?: string }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<string | null>;
+  clearPasswordRecovery: () => void;
 }
 
 const AuthContext = createContext<AuthCtx>({
   session: null,
   user: null,
   loading: true,
+  isPasswordRecovery: false,
   signIn: async () => null,
   signUp: async () => ({ error: null }),
   signOut: async () => {},
   resetPassword: async () => null,
+  clearPasswordRecovery: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -52,8 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (mounted) setSession(session);
-      // When user clicks password reset link, navigate to reset-password page
+      // When user clicks password reset link, flag recovery mode and navigate
       if (event === "PASSWORD_RECOVERY") {
+        setIsPasswordRecovery(true);
         router.replace("/reset-password");
       }
     });
@@ -76,7 +82,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    setIsPasswordRecovery(false);
     await supabase.auth.signOut();
+  }, []);
+
+  const clearPasswordRecovery = useCallback(() => {
+    setIsPasswordRecovery(false);
   }, []);
 
   const resetPassword = useCallback(async (email: string): Promise<string | null> => {
@@ -94,10 +105,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         user: session?.user ?? null,
         loading,
+        isPasswordRecovery,
         signIn,
         signUp,
         signOut,
         resetPassword,
+        clearPasswordRecovery,
       }}
     >
       {children}
