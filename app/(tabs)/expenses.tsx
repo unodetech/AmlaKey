@@ -18,7 +18,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "expo-router";
 import { supabase } from "../../lib/supabase";
-import { fetchSECBill } from "../../lib/sec";
+import { fetchSECBill, SECBillResult } from "../../lib/sec";
 import { fetchNWCBill } from "../../lib/nwc";
 import { useLanguage, TKey } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -114,6 +114,7 @@ export default function ExpensesScreen() {
   const uid = user?.id ?? "";
   const insets = useSafeAreaInsets();
   const S = useMemo(() => styles(C, shadow), [C, shadow]);
+
 
   // Hijri calendar preference
   const [showHijri, setShowHijri] = useState(false);
@@ -590,19 +591,30 @@ export default function ExpensesScreen() {
     fetchAll();
   }
 
+  async function confirmDeleteExpense(exp: Expense) {
+    const { error } = await supabase.from("expenses").delete().eq("id", exp.id);
+    if (error) {
+      if (Platform.OS === "web") window.alert(error.message);
+      else Alert.alert(t("error"), error.message);
+    } else {
+      fetchAll();
+    }
+  }
+
   async function deleteExpense(exp: Expense) {
-    Alert.alert(
-      t("delete") ?? "Delete",
-      `${CATEGORY_ICONS[exp.category]} ${exp.amount.toLocaleString()} ${t("sar")}?`,
-      [
-        { text: t("cancel"), style: "cancel" },
-        { text: t("delete") ?? "Delete", style: "destructive", onPress: async () => {
-          const { error } = await supabase.from("expenses").delete().eq("id", exp.id);
-          if (error) Alert.alert(t("error"), error.message);
-          else fetchAll();
-        }},
-      ]
-    );
+    const msg = `${CATEGORY_ICONS[exp.category]} ${exp.amount.toLocaleString()} ${t("sar")}?`;
+    if (Platform.OS === "web") {
+      if (window.confirm(msg)) confirmDeleteExpense(exp);
+    } else {
+      Alert.alert(
+        t("delete") ?? "Delete",
+        msg,
+        [
+          { text: t("cancel"), style: "cancel" },
+          { text: t("delete") ?? "Delete", style: "destructive", onPress: () => confirmDeleteExpense(exp) },
+        ]
+      );
+    }
   }
 
   async function togglePaid(exp: Expense) {
@@ -944,7 +956,7 @@ export default function ExpensesScreen() {
                   ref={(r) => { swipeRefs.current.set(exp.id, r); }}
                   isRTL={isRTL}
                   onEdit={() => openEditExpense(exp)}
-                  onDelete={exp.bill_ref ? undefined : () => deleteExpense(exp)}
+                  onDelete={() => deleteExpense(exp)}
                   onMarkPaid={
                     exp.bill_ref && (exp.bill_ref.startsWith("sec_") || exp.bill_ref.startsWith("nwc_"))
                       ? undefined
@@ -1486,6 +1498,7 @@ export default function ExpensesScreen() {
             </KeyboardAvoidingView>
           </View>
         </Modal>
+
       </View>
   );
 }
