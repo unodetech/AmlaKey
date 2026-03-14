@@ -120,7 +120,10 @@ function RootNavigator() {
   useEffect(() => {
     if (loading) return;
     // Don't redirect away from reset-password page during password recovery
-    if (isPasswordRecovery) return;
+    if (isPasswordRecovery) {
+      setNavigated(true);
+      return;
+    }
     // Navigate to the correct screen based on auth state
     if (!session) {
       // Web: show landing page first; Native: go straight to auth
@@ -131,7 +134,7 @@ function RootNavigator() {
     // Wait for navigation animation to settle before removing splash overlay
     const handle = InteractionManager.runAfterInteractions(() => setNavigated(true));
     return () => handle.cancel();
-  }, [session, loading]);
+  }, [session, loading, isPasswordRecovery]);
 
   return (
     <View style={{ flex: 1 }}>
