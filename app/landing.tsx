@@ -110,7 +110,11 @@ export default function LandingPage() {
         {/* ── Hero ─────────────────────────────── */}
         <View style={s.hero}>
           <View style={s.heroInner}>
-            <Text style={s.heroEmoji}>🏠</Text>
+            <Image
+              source={require("../assets/images/splash-icon.png")}
+              style={s.heroImage}
+              resizeMode="contain"
+            />
             <Text style={[s.heroTitle, !isDesktop && { fontSize: 32 }]}>
               {isRTL ? "أملاكي" : "Amlakey"}
             </Text>
@@ -388,9 +392,11 @@ const s = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 24,
   },
-  heroEmoji: {
-    fontSize: 64,
+  heroImage: {
+    width: 120,
+    height: 120,
     marginBottom: 16,
+    borderRadius: 24,
   },
   heroTitle: {
     fontSize: 48,

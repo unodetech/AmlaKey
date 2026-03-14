@@ -152,7 +152,12 @@ export default function ExpensesScreen() {
     description: "",
     property_id: "",
     isRecurring: false,
+    account_number: "",
+    unit_number: "",
   });
+
+  const isBillCategory = form.category === "electricity" || form.category === "water";
+  const [fetchingBill, setFetchingBill] = useState(false);
 
   // Edit expense state
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -658,18 +663,129 @@ export default function ExpensesScreen() {
   }
 
   async function addExpense() {
+    const isBill = form.category === "electricity" || form.category === "water";
     const errors: Record<string, string> = {};
-    if (!form.amount || parseFloat(form.amount) <= 0) {
-      errors.amount = t("validationAmountPositive");
-    } else if (parseFloat(form.amount) > 999999) {
-      errors.amount = t("validationAmountTooHigh");
+
+    if (isBill) {
+      // For utility bills: property and account number are mandatory
+      if (!form.property_id) {
+        errors.property_id = t("propertyRequired");
+      }
+      if (!form.account_number.trim()) {
+        errors.account_number = t("accountRequired");
+      }
+    } else {
+      if (!form.amount || parseFloat(form.amount) <= 0) {
+        errors.amount = t("validationAmountPositive");
+      } else if (parseFloat(form.amount) > 999999) {
+        errors.amount = t("validationAmountTooHigh");
+      }
     }
     if (form.description.length > 200) {
       errors.description = t("validationDescriptionLong");
     }
     setAddExpErrors(errors);
     if (Object.keys(errors).length > 0) return;
+
     setSaving(true);
+
+    if (isBill) {
+      // Fetch bill from SEC/NWC API
+      setFetchingBill(true);
+      try {
+        const type: IntegrationType = form.category === "electricity" ? "sec" : "nwc";
+        const accountNumber = form.account_number.trim();
+        const billRef = generateBillRef(type, accountNumber);
+        const today = new Date().toISOString().split("T")[0];
+        const selectedProp = properties.find(p => p.id === form.property_id);
+        const propName = selectedProp?.name ?? "";
+        const unitLabel = form.unit_number ? (isRTL ? ` وحدة ${form.unit_number}` : ` Unit ${form.unit_number}`) : "";
+        const billPeriod = isRTL
+          ? new Date().toLocaleDateString("ar-SA-u-ca-gregory", { month: "long", year: "numeric" })
+          : new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" });
+
+        let amount = 0;
+        let dueAmount = 0;
+        let desc = "";
+
+        if (type === "sec") {
+          const bill = await fetchSECBill(accountNumber);
+          amount = bill.totalAmount;
+          dueAmount = bill.dueAmount;
+          desc = isRTL
+            ? `فاتورة الكهرباء - ${propName}${unitLabel} - ${bill.consumption} كيلوواط - ${billPeriod}`
+            : `Electricity - ${propName}${unitLabel} - ${bill.consumption} kWh - ${billPeriod}`;
+        } else {
+          const bill = await fetchNWCBill(accountNumber);
+          amount = bill.lastBillAmount || bill.dueAmount;
+          dueAmount = bill.dueAmount;
+          desc = isRTL
+            ? `فاتورة المياه - ${propName}${unitLabel} - ${billPeriod}`
+            : `Water bill - ${propName}${unitLabel} - ${billPeriod}`;
+        }
+
+        const isBillPaid = dueAmount === 0;
+
+        // Check if bill already exists
+        const { data: existing } = await supabase
+          .from("expenses").select("id, amount")
+          .eq("bill_ref", billRef).maybeSingle();
+
+        if (existing) {
+          // Update existing bill
+          await supabase.from("expenses")
+            .update({ amount, date: today, description: desc, bill_paid: isBillPaid })
+            .eq("id", existing.id);
+        } else {
+          // Insert new bill
+          await supabase.from("expenses").insert([{
+            category: form.category,
+            amount, date: today, description: desc,
+            property_id: form.property_id, bill_ref: billRef, bill_paid: isBillPaid,
+          }]);
+        }
+
+        // Also save the account number to the property for background sync
+        if (type === "sec") {
+          if (form.unit_number) {
+            await supabase.from("unit_labels").upsert({
+              property_id: form.property_id, unit_number: form.unit_number,
+              sec_account: accountNumber, user_id: uid,
+            }, { onConflict: "property_id,unit_number" });
+            await supabase.from("properties").update({ has_multiple_sec: true }).eq("id", form.property_id);
+          } else {
+            await supabase.from("properties").update({
+              sec_account: accountNumber, has_multiple_sec: false,
+            }).eq("id", form.property_id);
+          }
+        } else {
+          if (form.unit_number) {
+            await supabase.from("unit_labels").upsert({
+              property_id: form.property_id, unit_number: form.unit_number,
+              nwc_account: accountNumber, user_id: uid,
+            }, { onConflict: "property_id,unit_number" });
+            await supabase.from("properties").update({ has_multiple_nwc: true }).eq("id", form.property_id);
+          } else {
+            await supabase.from("properties").update({
+              nwc_account: accountNumber, has_multiple_nwc: false,
+            }).eq("id", form.property_id);
+          }
+        }
+
+        setFetchingBill(false);
+        setSaving(false);
+        setModalVisible(false);
+        resetForm();
+        fetchAll();
+      } catch (e: any) {
+        setFetchingBill(false);
+        setSaving(false);
+        Alert.alert(t("error"), e.message ?? t("fetchError"));
+      }
+      return;
+    }
+
+    // Non-bill expense
     const insertData: any = {
       category: form.category,
       amount: parseFloat(form.amount),
@@ -687,12 +803,16 @@ export default function ExpensesScreen() {
     if (error) { Alert.alert(t("error"), error.message); }
     else {
       setModalVisible(false);
-      const today = new Date();
-      setSelectedDate(today);
-      setForm({ category: "maintenance", amount: "", date: today.toISOString().split("T")[0], description: "", property_id: "", isRecurring: false });
-      setSuggestedCat(null); setManualCatSelected(false);
+      resetForm();
       fetchAll();
     }
+  }
+
+  function resetForm() {
+    const today = new Date();
+    setSelectedDate(today);
+    setForm({ category: "maintenance", amount: "", date: today.toISOString().split("T")[0], description: "", property_id: "", isRecurring: false, account_number: "", unit_number: "" });
+    setSuggestedCat(null); setManualCatSelected(false);
   }
 
   const formatDate = (d: Date) => d.toISOString().split("T")[0];
@@ -937,124 +1057,190 @@ export default function ExpensesScreen() {
                     </TouchableOpacity>
                   )}
 
-                  <TextInput
-                    style={[S.input, isRTL && { textAlign: "right" }, !!addExpErrors.amount && S.inputError]}
-                    placeholder={`${t("amount")} (${t("sar")})`}
-                    placeholderTextColor={C.textMuted}
-                    keyboardType="numeric"
-                    returnKeyType="done"
-                    value={form.amount}
-                    onChangeText={(v) => { setForm({ ...form, amount: v }); const num = parseFloat(v); setAddExpErrors((e) => ({ ...e, amount: v.trim() && (isNaN(num) || num <= 0) ? t("validationAmountPositive") : v.trim() && num > 999999 ? t("validationAmountTooHigh") : "" })); }}
-                  />
-                  {!!addExpErrors.amount && <Text style={S.fieldError}>{addExpErrors.amount}</Text>}
-
-                  <Text style={S.fieldLabel}>{t("date")}</Text>
-                  <TouchableOpacity
-                    style={S.datePickerBtn}
-                    onPress={() => setShowDatePicker(true)}
-                  >
-                    <Text style={S.datePickerText}>📅 {form.date}</Text>
-                  </TouchableOpacity>
-                  {showDatePicker && (
+                  {/* Amount, date, description — hidden for bill categories (auto-fetched) */}
+                  {!isBillCategory && (
                     <>
-                      <DateTimePicker
-                        value={selectedDate}
-                        mode="date"
-                        display="spinner"
-                        locale="en-US"
-                        themeVariant={isDark ? "dark" : "light"}
-                        onChange={(_, date) => {
-                          if (date) {
-                            setSelectedDate(date);
-                            setForm({ ...form, date: formatDate(date) });
-                          }
-                        }}
+                      <TextInput
+                        style={[S.input, isRTL && { textAlign: "right" }, !!addExpErrors.amount && S.inputError]}
+                        placeholder={`${t("amount")} (${t("sar")})`}
+                        placeholderTextColor={C.textMuted}
+                        keyboardType="numeric"
+                        returnKeyType="done"
+                        value={form.amount}
+                        onChangeText={(v) => { setForm({ ...form, amount: v }); const num = parseFloat(v); setAddExpErrors((e) => ({ ...e, amount: v.trim() && (isNaN(num) || num <= 0) ? t("validationAmountPositive") : v.trim() && num > 999999 ? t("validationAmountTooHigh") : "" })); }}
                       />
-                      <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowDatePicker(false)}>
-                        <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                      {!!addExpErrors.amount && <Text style={S.fieldError}>{addExpErrors.amount}</Text>}
+
+                      <Text style={S.fieldLabel}>{t("date")}</Text>
+                      <TouchableOpacity
+                        style={S.datePickerBtn}
+                        onPress={() => setShowDatePicker(true)}
+                      >
+                        <Text style={S.datePickerText}>📅 {form.date}</Text>
                       </TouchableOpacity>
+                      {showDatePicker && (
+                        <>
+                          <DateTimePicker
+                            value={selectedDate}
+                            mode="date"
+                            display="spinner"
+                            locale="en-US"
+                            themeVariant={isDark ? "dark" : "light"}
+                            onChange={(_, date) => {
+                              if (date) {
+                                setSelectedDate(date);
+                                setForm({ ...form, date: formatDate(date) });
+                              }
+                            }}
+                          />
+                          <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowDatePicker(false)}>
+                            <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+
+                      <TextInput
+                        style={[S.input, isRTL && { textAlign: "right" }, !!addExpErrors.description && S.inputError]}
+                        placeholder={t("description")}
+                        placeholderTextColor={C.textMuted}
+                        returnKeyType="done"
+                        maxLength={200}
+                        value={form.description}
+                        onChangeText={(v) => { setForm({ ...form, description: v }); setAddExpErrors((e) => ({ ...e, description: v.length > 200 ? t("validationDescriptionLong") : "" })); if (!manualCatSelected) { const cat = suggestCategory(v); setSuggestedCat(cat); if (cat) setForm(f => ({ ...f, description: v, category: cat })); } }}
+                      />
+                      {!!addExpErrors.description && <Text style={S.fieldError}>{addExpErrors.description}</Text>}
                     </>
                   )}
 
-                  <TextInput
-                    style={[S.input, isRTL && { textAlign: "right" }, !!addExpErrors.description && S.inputError]}
-                    placeholder={t("description")}
-                    placeholderTextColor={C.textMuted}
-                    returnKeyType="done"
-                    maxLength={200}
-                    value={form.description}
-                    onChangeText={(v) => { setForm({ ...form, description: v }); setAddExpErrors((e) => ({ ...e, description: v.length > 200 ? t("validationDescriptionLong") : "" })); if (!manualCatSelected) { const cat = suggestCategory(v); setSuggestedCat(cat); if (cat) setForm(f => ({ ...f, description: v, category: cat })); } }}
-                  />
-                  {!!addExpErrors.description && <Text style={S.fieldError}>{addExpErrors.description}</Text>}
-
-                  <Text style={S.fieldLabel}>{t("property")}</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                  <Text style={S.fieldLabel}>{t("property")} {isBillCategory ? "*" : ""}</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
                     <View style={[S.segmentRow, isRTL && S.rowRev]}>
-                      <TouchableOpacity
-                        style={[S.segBtn, form.property_id === "" && { backgroundColor: C.accent }]}
-                        onPress={() => setForm({ ...form, property_id: "" })}
-                      >
-                        <Text style={[S.segBtnText, form.property_id === "" && { color: "#fff" }]}>—</Text>
-                      </TouchableOpacity>
+                      {!isBillCategory && (
+                        <TouchableOpacity
+                          style={[S.segBtn, form.property_id === "" && { backgroundColor: C.accent }]}
+                          onPress={() => setForm({ ...form, property_id: "", unit_number: "" })}
+                        >
+                          <Text style={[S.segBtnText, form.property_id === "" && { color: "#fff" }]}>—</Text>
+                        </TouchableOpacity>
+                      )}
                       {properties.map((p) => (
                         <TouchableOpacity
                           key={p.id}
                           style={[S.segBtn, form.property_id === p.id && { backgroundColor: C.accent }]}
-                          onPress={() => setForm({ ...form, property_id: p.id })}
+                          onPress={() => setForm({ ...form, property_id: p.id, unit_number: "" })}
                         >
                           <Text style={[S.segBtnText, form.property_id === p.id && { color: "#fff" }]}>{p.name}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
                   </ScrollView>
+                  {!!addExpErrors.property_id && <Text style={S.fieldError}>{addExpErrors.property_id}</Text>}
 
-                  {/* Recurring toggle */}
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => setForm({ ...form, isRecurring: !form.isRecurring })}
-                    style={{
-                      flexDirection: isRTL ? "row-reverse" : "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: 12,
-                      paddingVertical: 12,
-                      paddingHorizontal: 14,
-                      borderRadius: 12,
-                      backgroundColor: form.isRecurring ? (isDark ? "#166534" : "#DCFCE7") : (isDark ? C.surface : "#F3F4F6"),
-                      borderWidth: 1.5,
-                      borderColor: form.isRecurring ? "#22C55E" : C.border,
-                    }}
-                  >
-                    <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10, flex: 1 }}>
-                      <Text style={{ fontSize: 22 }}>🔄</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontWeight: "600", color: form.isRecurring ? "#16A34A" : C.text, textAlign: isRTL ? "right" : "left" }}>
-                          {t("repeatMonthly")}
-                        </Text>
-                        <Text style={{ fontSize: 11, color: form.isRecurring ? "#15803D" : C.textMuted, marginTop: 2, textAlign: isRTL ? "right" : "left" }}>
-                          {form.isRecurring
-                            ? t("recurringHintOn")
-                            : t("recurringHintOff")}
-                        </Text>
+                  {/* Unit selector — only for bill categories, optional */}
+                  {isBillCategory && form.property_id ? (() => {
+                    const selectedProp = properties.find(p => p.id === form.property_id);
+                    const totalUnits = selectedProp?.total_units ?? 0;
+                    if (totalUnits <= 1) return null;
+                    return (
+                      <>
+                        <Text style={S.fieldLabel}>{t("unitOptional")}</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
+                          <View style={[S.segmentRow, isRTL && S.rowRev]}>
+                            <TouchableOpacity
+                              style={[S.segBtn, form.unit_number === "" && { backgroundColor: C.accent }]}
+                              onPress={() => setForm({ ...form, unit_number: "" })}
+                            >
+                              <Text style={[S.segBtnText, form.unit_number === "" && { color: "#fff" }]}>—</Text>
+                            </TouchableOpacity>
+                            {Array.from({ length: totalUnits }, (_, i) => String(i + 1)).map((u) => (
+                              <TouchableOpacity
+                                key={u}
+                                style={[S.segBtn, form.unit_number === u && { backgroundColor: C.accent }]}
+                                onPress={() => setForm({ ...form, unit_number: u })}
+                              >
+                                <Text style={[S.segBtnText, form.unit_number === u && { color: "#fff" }]}>{u}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </ScrollView>
+                      </>
+                    );
+                  })() : null}
+
+                  {/* Account number — only for bill categories */}
+                  {isBillCategory && (
+                    <>
+                      <Text style={S.fieldLabel}>{form.category === "electricity" ? "⚡" : "💧"} {t("accountNumber")} *</Text>
+                      <TextInput
+                        style={[S.input, isRTL && { textAlign: "right" }, !!addExpErrors.account_number && S.inputError]}
+                        placeholder={t("accountNumber")}
+                        placeholderTextColor={C.textMuted}
+                        keyboardType="numeric"
+                        returnKeyType="done"
+                        value={form.account_number}
+                        onChangeText={(v) => { setForm({ ...form, account_number: v }); setAddExpErrors((e) => ({ ...e, account_number: "" })); }}
+                      />
+                      {!!addExpErrors.account_number && <Text style={S.fieldError}>{addExpErrors.account_number}</Text>}
+                    </>
+                  )}
+
+                  {/* Recurring toggle — only for non-bill categories */}
+                  {!isBillCategory && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setForm({ ...form, isRecurring: !form.isRecurring })}
+                      style={{
+                        flexDirection: isRTL ? "row-reverse" : "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 12,
+                        paddingVertical: 12,
+                        paddingHorizontal: 14,
+                        borderRadius: 12,
+                        backgroundColor: form.isRecurring ? (isDark ? "#166534" : "#DCFCE7") : (isDark ? C.surface : "#F3F4F6"),
+                        borderWidth: 1.5,
+                        borderColor: form.isRecurring ? "#22C55E" : C.border,
+                      }}
+                    >
+                      <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10, flex: 1 }}>
+                        <Text style={{ fontSize: 22 }}>🔄</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontWeight: "600", color: form.isRecurring ? "#16A34A" : C.text, textAlign: isRTL ? "right" : "left" }}>
+                            {t("repeatMonthly")}
+                          </Text>
+                          <Text style={{ fontSize: 11, color: form.isRecurring ? "#15803D" : C.textMuted, marginTop: 2, textAlign: isRTL ? "right" : "left" }}>
+                            {form.isRecurring
+                              ? t("recurringHintOn")
+                              : t("recurringHintOff")}
+                          </Text>
+                        </View>
                       </View>
+                      <View style={{
+                        width: 24, height: 24, borderRadius: 12,
+                        backgroundColor: form.isRecurring ? "#22C55E" : "transparent",
+                        borderWidth: 2,
+                        borderColor: form.isRecurring ? "#22C55E" : C.border,
+                        alignItems: "center", justifyContent: "center",
+                      }}>
+                        {form.isRecurring && <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700", lineHeight: 16 }}>✓</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Fetching bill indicator */}
+                  {fetchingBill && (
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+                      <ActivityIndicator size="small" color={C.accent} />
+                      <Text style={{ color: C.accent, fontWeight: "600" }}>{t("fetchingBill")}</Text>
                     </View>
-                    <View style={{
-                      width: 24, height: 24, borderRadius: 12,
-                      backgroundColor: form.isRecurring ? "#22C55E" : "transparent",
-                      borderWidth: 2,
-                      borderColor: form.isRecurring ? "#22C55E" : C.border,
-                      alignItems: "center", justifyContent: "center",
-                    }}>
-                      {form.isRecurring && <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700", lineHeight: 16 }}>✓</Text>}
-                    </View>
-                  </TouchableOpacity>
+                  )}
 
                   <View style={[S.modalBtns, isRTL && S.rowRev]}>
                     <TouchableOpacity style={S.cancelBtn} onPress={() => setModalVisible(false)}>
                       <Text style={S.cancelBtnText}>{t("cancel")}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={S.saveBtn} onPress={addExpense} disabled={saving}>
-                      {saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.saveBtnText}>{t("save")}</Text>}
+                    <TouchableOpacity style={S.saveBtn} onPress={addExpense} disabled={saving || fetchingBill}>
+                      {saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.saveBtnText}>{isBillCategory ? t("fetchBills") : t("save")}</Text>}
                     </TouchableOpacity>
                   </View>
                 </View>

@@ -323,16 +323,22 @@ export default function ProfileScreen() {
       <TouchableOpacity
         style={S.signOutBtn}
         activeOpacity={0.7}
-        onPress={() =>
-          Alert.alert(
-            t("signOut") ?? "Sign Out",
-            t("signOutConfirm") ?? "Are you sure you want to sign out?",
-            [
-              { text: t("cancel"), style: "cancel" },
-              { text: t("signOut") ?? "Sign Out", style: "destructive", onPress: signOut },
-            ]
-          )
-        }
+        onPress={() => {
+          if (Platform.OS === "web") {
+            if (window.confirm(t("signOutConfirm") ?? "Are you sure you want to sign out?")) {
+              signOut();
+            }
+          } else {
+            Alert.alert(
+              t("signOut") ?? "Sign Out",
+              t("signOutConfirm") ?? "Are you sure you want to sign out?",
+              [
+                { text: t("cancel"), style: "cancel" },
+                { text: t("signOut") ?? "Sign Out", style: "destructive", onPress: signOut },
+              ]
+            );
+          }
+        }}
         accessibilityRole="button"
         accessibilityLabel={t("signOut") ?? "Sign Out"}
       >

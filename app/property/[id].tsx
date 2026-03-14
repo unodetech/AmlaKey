@@ -78,11 +78,6 @@ export default function PropertyUnitsScreen() {
       setPropName(data.name);
       if (data.type) setPropType(data.type as PropertyType);
       setEditForm({ name: data.name, type: data.type ?? "apartment", city: data.city ?? "alkharj", total_units: String(data.total_units ?? 1), floors: String(data.floors ?? 1), monthly_income: String(data.monthly_income ?? 0), notes: data.notes ?? "", sec_account: data.sec_account ?? "", nwc_account: data.nwc_account ?? "", has_multiple_sec: data.has_multiple_sec ?? false, has_multiple_nwc: data.has_multiple_nwc ?? false, latitude: data.latitude ?? null, longitude: data.longitude ?? null });
-      // Fetch bill counts for single-account mode
-      const secAcc = data.sec_account ?? "";
-      const nwcAcc = data.nwc_account ?? "";
-      if (secAcc) fetchBillCount("sec", secAcc).then(setPropSecBillCount); else setPropSecBillCount(0);
-      if (nwcAcc) fetchBillCount("nwc", nwcAcc).then(setPropNwcBillCount); else setPropNwcBillCount(0);
     }
   }
 
@@ -171,10 +166,6 @@ export default function PropertyUnitsScreen() {
       floors: parseInt(editForm.floors) || 1,
       monthly_income: parseFloat(editForm.monthly_income) || 0,
       notes: editForm.notes.trim() || null,
-      sec_account: editForm.has_multiple_sec ? null : (editForm.sec_account.trim() || null),
-      nwc_account: editForm.has_multiple_nwc ? null : (editForm.nwc_account.trim() || null),
-      has_multiple_sec: editForm.has_multiple_sec,
-      has_multiple_nwc: editForm.has_multiple_nwc,
       latitude: editForm.latitude,
       longitude: editForm.longitude,
     }).eq("id", id!);
@@ -301,13 +292,6 @@ export default function PropertyUnitsScreen() {
     const key = String(unitNum);
     setEditUnit(unitNum);
     setLabelInput(labelMap[key] ?? "");
-    const secAcc = unitAccountMap[key]?.sec_account ?? "";
-    const nwcAcc = unitAccountMap[key]?.nwc_account ?? "";
-    setUnitSecInput(secAcc);
-    setUnitNwcInput(nwcAcc);
-    // Fetch bill counts for unit-level accounts
-    if (secAcc) fetchBillCount("sec", secAcc).then(setUnitSecBillCount); else setUnitSecBillCount(0);
-    if (nwcAcc) fetchBillCount("nwc", nwcAcc).then(setUnitNwcBillCount); else setUnitNwcBillCount(0);
   }
 
   async function saveLabel() {
@@ -316,16 +300,12 @@ export default function PropertyUnitsScreen() {
     try {
       const unitKey = String(editUnit);
       const hasLabel = !!labelInput.trim();
-      const hasSec = !!unitSecInput.trim();
-      const hasNwc = !!unitNwcInput.trim();
-      if (hasLabel || hasSec || hasNwc) {
+      if (hasLabel) {
         const { error } = await supabase.from("unit_labels").upsert(
           {
             property_id: id,
             unit_number: unitKey,
             label: labelInput.trim() || null,
-            sec_account: unitSecInput.trim() || null,
-            nwc_account: unitNwcInput.trim() || null,
             user_id: user?.id,
           },
           { onConflict: "property_id,unit_number" }
@@ -633,54 +613,6 @@ export default function PropertyUnitsScreen() {
               autoFocus
             />
             <Text style={S.labelHint}>{t("labelHint")}</Text>
-            {editForm.has_multiple_sec && (
-              <>
-                <Text style={S.unitAccountLabel}>⚡ {t("secAccount")}</Text>
-                <TextInput
-                  style={S.labelInput}
-                  value={unitSecInput}
-                  onChangeText={setUnitSecInput}
-                  placeholder={t("secAccount")}
-                  placeholderTextColor={C.textMuted}
-                  textAlign={isRTL ? "right" : "left"}
-                  keyboardType="numeric"
-                />
-                {unitSecBillCount > 0 && (
-                  <TouchableOpacity
-                    style={S.deleteBillsBtn}
-                    onPress={() => deleteBillsForAccount("sec", unitSecInput, () => {
-                      setUnitSecBillCount(0);
-                    })}
-                  >
-                    <Text style={S.deleteBillsText}>🗑️ {t("deleteBills") ?? "Delete Bills"} ({unitSecBillCount})</Text>
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
-            {editForm.has_multiple_nwc && (
-              <>
-                <Text style={S.unitAccountLabel}>💧 {t("nwcAccount")}</Text>
-                <TextInput
-                  style={S.labelInput}
-                  value={unitNwcInput}
-                  onChangeText={setUnitNwcInput}
-                  placeholder={t("nwcAccount")}
-                  placeholderTextColor={C.textMuted}
-                  textAlign={isRTL ? "right" : "left"}
-                  keyboardType="numeric"
-                />
-                {unitNwcBillCount > 0 && (
-                  <TouchableOpacity
-                    style={S.deleteBillsBtn}
-                    onPress={() => deleteBillsForAccount("nwc", unitNwcInput, () => {
-                      setUnitNwcBillCount(0);
-                    })}
-                  >
-                    <Text style={S.deleteBillsText}>🗑️ {t("deleteBills") ?? "Delete Bills"} ({unitNwcBillCount})</Text>
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
             <View style={S.modalActions}>
               <TouchableOpacity style={S.cancelBtn} onPress={() => setEditUnit(null)}>
                 <Text style={S.cancelBtnText}>{t("cancel")}</Text>
@@ -810,86 +742,6 @@ export default function PropertyUnitsScreen() {
                   placeholderTextColor={C.textMuted}
                   textAlign={isRTL ? "right" : "left"}
                 />
-
-                {/* SEC (Electricity) */}
-                <Text style={S.editFieldLabel}>⚡ {t("secAccount")}</Text>
-                <View style={[S.editSegRow, isRTL && { flexDirection: "row-reverse" }]}>
-                  <TouchableOpacity
-                    style={[S.editSeg, !editForm.has_multiple_sec && { backgroundColor: C.primary, borderColor: C.primary }]}
-                    onPress={() => setEditForm((f) => ({ ...f, has_multiple_sec: false }))}
-                  >
-                    <Text style={[S.editSegText, !editForm.has_multiple_sec && { color: "#fff" }]}>{t("singleAccount")}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[S.editSeg, editForm.has_multiple_sec && { backgroundColor: C.primary, borderColor: C.primary }]}
-                    onPress={() => setEditForm((f) => ({ ...f, has_multiple_sec: true, sec_account: "" }))}
-                  >
-                    <Text style={[S.editSegText, editForm.has_multiple_sec && { color: "#fff" }]}>{t("multipleSEC")}</Text>
-                  </TouchableOpacity>
-                </View>
-                {!editForm.has_multiple_sec ? (
-                  <>
-                    <TextInput
-                      style={S.editInput}
-                      value={editForm.sec_account}
-                      onChangeText={(v) => setEditForm((f) => ({ ...f, sec_account: v }))}
-                      placeholder={t("secAccount")} placeholderTextColor={C.textMuted}
-                      textAlign={isRTL ? "right" : "left"} keyboardType="numeric"
-                    />
-                    {propSecBillCount > 0 && (
-                      <TouchableOpacity
-                        style={S.deleteBillsBtn}
-                        onPress={() => deleteBillsForAccount("sec", editForm.sec_account, () => {
-                          setPropSecBillCount(0);
-                        })}
-                      >
-                        <Text style={S.deleteBillsText}>🗑️ {t("deleteBills") ?? "Delete Bills"} ({propSecBillCount})</Text>
-                      </TouchableOpacity>
-                    )}
-                  </>
-                ) : (
-                  <Text style={S.hintText}>💡 {t("multipleAccountsHint")}</Text>
-                )}
-
-                {/* NWC (Water) */}
-                <Text style={S.editFieldLabel}>💧 {t("nwcAccount")}</Text>
-                <View style={[S.editSegRow, isRTL && { flexDirection: "row-reverse" }]}>
-                  <TouchableOpacity
-                    style={[S.editSeg, !editForm.has_multiple_nwc && { backgroundColor: C.primary, borderColor: C.primary }]}
-                    onPress={() => setEditForm((f) => ({ ...f, has_multiple_nwc: false }))}
-                  >
-                    <Text style={[S.editSegText, !editForm.has_multiple_nwc && { color: "#fff" }]}>{t("singleAccount")}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[S.editSeg, editForm.has_multiple_nwc && { backgroundColor: C.primary, borderColor: C.primary }]}
-                    onPress={() => setEditForm((f) => ({ ...f, has_multiple_nwc: true, nwc_account: "" }))}
-                  >
-                    <Text style={[S.editSegText, editForm.has_multiple_nwc && { color: "#fff" }]}>{t("multipleNWC")}</Text>
-                  </TouchableOpacity>
-                </View>
-                {!editForm.has_multiple_nwc ? (
-                  <>
-                    <TextInput
-                      style={S.editInput}
-                      value={editForm.nwc_account}
-                      onChangeText={(v) => setEditForm((f) => ({ ...f, nwc_account: v }))}
-                      placeholder={t("nwcAccount")} placeholderTextColor={C.textMuted}
-                      textAlign={isRTL ? "right" : "left"} keyboardType="numeric"
-                    />
-                    {propNwcBillCount > 0 && (
-                      <TouchableOpacity
-                        style={S.deleteBillsBtn}
-                        onPress={() => deleteBillsForAccount("nwc", editForm.nwc_account, () => {
-                          setPropNwcBillCount(0);
-                        })}
-                      >
-                        <Text style={S.deleteBillsText}>🗑️ {t("deleteBills") ?? "Delete Bills"} ({propNwcBillCount})</Text>
-                      </TouchableOpacity>
-                    )}
-                  </>
-                ) : (
-                  <Text style={S.hintText}>💡 {t("multipleAccountsHint")}</Text>
-                )}
 
                 {/* Buttons */}
                 <View style={[S.modalActions, { marginTop: 20 }]}>
