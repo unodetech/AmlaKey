@@ -315,14 +315,20 @@ export default function UnitDetailScreen() {
 
   // ── Collect Payment ─────────────────────────────────────────
   const doInsertPayment = async () => {
+    const resolvedTenantId = tenant?.id || tenantId;
+    const resolvedPropertyId = (tenant as any)?.property_id || propertyId;
+    if (!resolvedTenantId || !resolvedPropertyId) {
+      Alert.alert(t("error"), t("failedToLoadData"));
+      return;
+    }
     setSavingPay(true);
     try {
       const d = new Date(payDate);
       const monthYear = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const { error } = await supabase.from("payments").insert([
         {
-          tenant_id: tenantId,
-          property_id: propertyId,
+          tenant_id: resolvedTenantId,
+          property_id: resolvedPropertyId,
           amount: parseFloat(payAmount),
           payment_date: payDate,
           month_year: monthYear,

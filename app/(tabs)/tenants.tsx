@@ -423,6 +423,10 @@ true;
   async function recordPayment() {
     if (!payTenant) return;
     if (!payAmount) { Alert.alert(t("error"), t("amountRequired")); return; }
+    if (!payTenant.id || !payTenant.property_id) {
+      Alert.alert(t("error"), t("failedToLoadData"));
+      return;
+    }
     setPayingSaving(true);
     const monthYear = `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, "0")}`;
     const { error } = await supabase.from("payments").insert([{

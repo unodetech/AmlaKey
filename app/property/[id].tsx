@@ -289,13 +289,20 @@ export default function PropertyUnitsScreen() {
     try {
       const d = new Date(bulkPayDate + "T12:00:00");
       const monthYear = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const inserts = Array.from(selectedUnits).map(unitKey => ({
-        tenant_id: tenantMap[unitKey].id,
-        property_id: id,
-        amount: tenantMap[unitKey].monthly_rent,
-        payment_date: bulkPayDate,
-        month_year: monthYear,
-      }));
+      const inserts = Array.from(selectedUnits)
+        .filter(unitKey => tenantMap[unitKey]?.id && id)
+        .map(unitKey => ({
+          tenant_id: tenantMap[unitKey].id,
+          property_id: id,
+          amount: tenantMap[unitKey].monthly_rent,
+          payment_date: bulkPayDate,
+          month_year: monthYear,
+        }));
+      if (inserts.length === 0) {
+        Alert.alert(t("error"), t("failedToLoadData"));
+        setBulkSaving(false);
+        return;
+      }
       const { error } = await supabase.from("payments").insert(inserts);
       if (error) throw error;
       setBulkPayModal(false);
