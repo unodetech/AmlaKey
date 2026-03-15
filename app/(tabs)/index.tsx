@@ -19,6 +19,7 @@ import { formatDualDate, formatMonthDual } from "../../lib/dateUtils";
 import { useAuth } from "../../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import WebContainer, { useResponsive } from "../../components/WebContainer";
+import { modalBackdropStyle } from "../../components/WebDateInput";
 import { useSubscription } from "../../context/SubscriptionContext";
 import { userKey, PERSONAL_INFO_KEY, HIJRI_KEY } from "../../lib/storage";
 
@@ -620,7 +621,7 @@ export default function DashboardScreen() {
       {/* Occupancy Modal — each property clickable */}
       <Modal visible={occModal} transparent animationType={Platform.OS === 'web' ? 'fade' : 'slide'} onRequestClose={() => setOccModal(false)}>
         <View style={S.modalOverlay}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setOccModal(false)} />
+          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => setOccModal(false)} />
           <View style={[S.modalBox, { maxHeight: "70%" }]}>
             <View style={[S.modalHeader, isRTL && S.rowRev]}>
               <Text style={S.modalTitle}>{t("occupancyDetails")}</Text>
@@ -666,7 +667,7 @@ export default function DashboardScreen() {
       {/* ── Calendar Modal ── */}
       <Modal visible={calendarModal} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setCalendarModal(false)}>
         <View style={S.modalOverlay}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { setCalendarModal(false); setSelectedCalDate(null); }} />
+          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { setCalendarModal(false); setSelectedCalDate(null); }} />
           <View style={[S.modalBox, { maxHeight: "80%" }]}>
             {/* Month nav + Today */}
             <View style={[S.calHeader, isRTL && S.rowRev]}>
@@ -970,6 +971,7 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   statCardDesktop: { padding: 20, borderTopWidth: 4, ...(Platform.OS === 'web' ? { cursor: 'pointer', transition: 'transform 0.2s ease, box-shadow 0.2s ease' } as any : {}) },
   statCardWide: { flexBasis: "22%", minWidth: 180 },
   statCardHover: Platform.OS === 'web' ? { transform: [{ translateY: -2 }], shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 12 } : {},
+  quickActionHover: Platform.OS === 'web' ? { transform: [{ translateY: -2 }], shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 12 } : {},
   statCardFull: { flex: 1, backgroundColor: C.surface, borderRadius: radii.lg, padding: 14, borderTopWidth: 3, alignItems: "center", ...shadow } as any,
   statLabel: { fontSize: 11, color: C.textMuted, marginBottom: 2, textAlign: "center" },
   statVal: { fontSize: 18, fontWeight: "700", textAlign: "center" },
@@ -1014,7 +1016,7 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   showMoreText: { color: C.accent, fontWeight: "600", fontSize: 13 },
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   // Occupancy modal
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === 'web' ? { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 } : {}) },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === 'web' ? { justifyContent: 'center', paddingHorizontal: 16, backdropFilter: 'blur(8px)' } as any : {}) },
   modalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 30, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', borderRadius: 20, alignSelf: 'center', paddingBottom: spacing.lg } : {}) },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   modalTitle: { fontSize: 18, fontWeight: "700", color: C.text },

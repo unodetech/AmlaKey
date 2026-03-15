@@ -24,6 +24,7 @@ import { userKey, PERSONAL_INFO_KEY } from "../../lib/storage";
 import { spacing, radii } from "../../constants/theme";
 import { useSubscription, FREE_LIMITS } from "../../context/SubscriptionContext";
 import WebContainer, { useResponsive } from "../../components/WebContainer";
+import { modalBackdropStyle } from "../../components/WebDateInput";
 
 type PropertyType = "apartment" | "villa" | "commercial" | "shop";
 const CITIES = ["alkharj", "riyadh", "jeddah", "dammam"];
@@ -430,7 +431,7 @@ export default function PropertiesScreen() {
         {/* ── Add Modal ── */}
         <Modal visible={addVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setAddVisible(false)}>
           <View style={S.modalOverlay}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setAddVisible(false); }} />
+            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setAddVisible(false); }} />
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={true}>
                 <View style={S.modalBox}>
@@ -546,7 +547,7 @@ export default function PropertiesScreen() {
         {/* ── Edit Modal ── */}
         <Modal visible={editVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setEditVisible(false)}>
           <View style={S.modalOverlay}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setEditVisible(false); }} />
+            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setEditVisible(false); }} />
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={true}>
                 <View style={S.modalBox}>
@@ -696,8 +697,8 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   incomeText: { fontSize: 13, fontWeight: "700", color: C.accent },
   viewHint: { fontSize: 11, color: C.accent },
   emptyText: { textAlign: "center", color: C.textMuted, marginTop: 60, fontSize: 15 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === 'web' ? { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 } : {}) },
-  modalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', borderRadius: 20, alignSelf: 'center', paddingBottom: spacing.lg } : {}) },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === 'web' ? { justifyContent: 'center', paddingHorizontal: 16, backdropFilter: 'blur(8px)' } as any : {}) },
+  modalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', borderRadius: 20, alignSelf: 'center', paddingBottom: spacing.lg, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' } as any : {}) },
   modalTitle: { fontSize: 20, fontWeight: "700", color: C.text, marginBottom: 16, textAlign: "center" },
   input: { backgroundColor: C.background, borderRadius: radii.md, padding: 12, color: C.text, marginBottom: 10, borderWidth: 1, borderColor: C.border },
   notesInput: { height: 80, textAlignVertical: "top" },

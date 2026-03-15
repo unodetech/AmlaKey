@@ -32,6 +32,7 @@ import { userKey, HIJRI_KEY } from "../../lib/storage";
 import { SwipeableRow, SwipeableRowRef } from "../../components/SwipeableRow";
 import { suggestCategory } from "../../lib/expenseCategorizer";
 import WebContainer, { useResponsive } from "../../components/WebContainer";
+import { WebDateInput, modalBackdropStyle } from "../../components/WebDateInput";
 
 type Category = "water" | "electricity" | "maintenance" | "cleaning" | "management" | "other" | "insurance" | "taxes";
 
@@ -1025,7 +1026,7 @@ export default function ExpensesScreen() {
         {/* Add Modal */}
         <Modal visible={modalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setModalVisible(false)}>
           <View style={S.modalOverlay}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setModalVisible(false); }} />
+            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setModalVisible(false); }} />
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View style={S.modalBox}>
@@ -1087,30 +1088,45 @@ export default function ExpensesScreen() {
                       {!!addExpErrors.amount && <Text style={S.fieldError}>{addExpErrors.amount}</Text>}
 
                       <Text style={S.fieldLabel}>{t("date")}</Text>
-                      <TouchableOpacity
-                        style={S.datePickerBtn}
-                        onPress={() => setShowDatePicker(true)}
-                      >
-                        <Text style={S.datePickerText}>📅 {form.date}</Text>
-                      </TouchableOpacity>
-                      {showDatePicker && (
+                      {Platform.OS === 'web' ? (
+                        <WebDateInput
+                          value={form.date}
+                          onChange={(val) => {
+                            setForm({ ...form, date: val });
+                            setSelectedDate(new Date(val + "T12:00:00"));
+                          }}
+                          textColor={C.text}
+                          backgroundColor={C.background}
+                          borderColor={C.border}
+                        />
+                      ) : (
                         <>
-                          <DateTimePicker
-                            value={selectedDate}
-                            mode="date"
-                            display="spinner"
-                            locale="en-US"
-                            themeVariant={isDark ? "dark" : "light"}
-                            onChange={(_, date) => {
-                              if (date) {
-                                setSelectedDate(date);
-                                setForm({ ...form, date: formatDate(date) });
-                              }
-                            }}
-                          />
-                          <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowDatePicker(false)}>
-                            <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                          <TouchableOpacity
+                            style={S.datePickerBtn}
+                            onPress={() => setShowDatePicker(true)}
+                          >
+                            <Text style={S.datePickerText}>📅 {form.date}</Text>
                           </TouchableOpacity>
+                          {showDatePicker && (
+                            <>
+                              <DateTimePicker
+                                value={selectedDate}
+                                mode="date"
+                                display="spinner"
+                                locale="en-US"
+                                themeVariant={isDark ? "dark" : "light"}
+                                onChange={(_, date) => {
+                                  if (date) {
+                                    setSelectedDate(date);
+                                    setForm({ ...form, date: formatDate(date) });
+                                  }
+                                }}
+                              />
+                              <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowDatePicker(false)}>
+                                <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                              </TouchableOpacity>
+                            </>
+                          )}
                         </>
                       )}
 
@@ -1267,7 +1283,7 @@ export default function ExpensesScreen() {
         {/* Integration Modal */}
         <Modal visible={integrationModal} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setIntegrationModal(false)}>
           <View style={S.modalOverlay}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { setIntegrationModal(false); fetchAll(); }} />
+            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { setIntegrationModal(false); fetchAll(); }} />
               <View style={[S.modalBox, { maxHeight: "75%" }]}>
                 {/* Header */}
                 <View style={[S.integrationHeader, isRTL && S.rowRev]}>
@@ -1370,7 +1386,7 @@ export default function ExpensesScreen() {
         {/* Edit Modal */}
         <Modal visible={editModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setEditModalVisible(false)}>
           <View style={S.modalOverlay}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setEditModalVisible(false); }} />
+            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setEditModalVisible(false); }} />
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View style={S.modalBox}>
@@ -1429,30 +1445,45 @@ export default function ExpensesScreen() {
                   {!!editExpErrors.amount && <Text style={S.fieldError}>{editExpErrors.amount}</Text>}
 
                   <Text style={S.fieldLabel}>{t("date")}</Text>
-                  <TouchableOpacity
-                    style={S.datePickerBtn}
-                    onPress={() => setEditShowDatePicker(true)}
-                  >
-                    <Text style={S.datePickerText}>📅 {editForm.date}</Text>
-                  </TouchableOpacity>
-                  {editShowDatePicker && (
+                  {Platform.OS === 'web' ? (
+                    <WebDateInput
+                      value={editForm.date}
+                      onChange={(val) => {
+                        setEditForm({ ...editForm, date: val });
+                        setEditSelectedDate(new Date(val + "T12:00:00"));
+                      }}
+                      textColor={C.text}
+                      backgroundColor={C.background}
+                      borderColor={C.border}
+                    />
+                  ) : (
                     <>
-                      <DateTimePicker
-                        value={editSelectedDate}
-                        mode="date"
-                        display="spinner"
-                        locale="en-US"
-                        themeVariant={isDark ? "dark" : "light"}
-                        onChange={(_, date) => {
-                          if (date) {
-                            setEditSelectedDate(date);
-                            setEditForm({ ...editForm, date: formatDate(date) });
-                          }
-                        }}
-                      />
-                      <TouchableOpacity style={S.pickerConfirm} onPress={() => setEditShowDatePicker(false)}>
-                        <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                      <TouchableOpacity
+                        style={S.datePickerBtn}
+                        onPress={() => setEditShowDatePicker(true)}
+                      >
+                        <Text style={S.datePickerText}>📅 {editForm.date}</Text>
                       </TouchableOpacity>
+                      {editShowDatePicker && (
+                        <>
+                          <DateTimePicker
+                            value={editSelectedDate}
+                            mode="date"
+                            display="spinner"
+                            locale="en-US"
+                            themeVariant={isDark ? "dark" : "light"}
+                            onChange={(_, date) => {
+                              if (date) {
+                                setEditSelectedDate(date);
+                                setEditForm({ ...editForm, date: formatDate(date) });
+                              }
+                            }}
+                          />
+                          <TouchableOpacity style={S.pickerConfirm} onPress={() => setEditShowDatePicker(false)}>
+                            <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
                     </>
                   )}
 
@@ -1546,8 +1577,8 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   billPaidBadge: { fontSize: 10, color: "#22C55E", fontWeight: "600", marginTop: 3 },
   billUnpaidBadge: { fontSize: 10, color: "#F59E0B", fontWeight: "600", marginTop: 3 },
   emptyText: { textAlign: "center", color: C.textMuted, marginTop: 60, fontSize: 15 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === 'web' ? { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 } : {}) },
-  modalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', borderRadius: 20, alignSelf: 'center', paddingBottom: spacing.lg } : {}) },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === 'web' ? { justifyContent: 'center', paddingHorizontal: 16, backdropFilter: 'blur(8px)' } as any : {}) },
+  modalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', borderRadius: 20, alignSelf: 'center', paddingBottom: spacing.lg, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' } as any : {}) },
   modalTitle: { fontSize: 20, fontWeight: "700", color: C.text, marginBottom: 16, textAlign: "center" },
   input: { backgroundColor: C.background, borderRadius: radii.md, padding: 12, color: C.text, marginBottom: 10, borderWidth: 1, borderColor: C.border },
   fieldLabel: { color: C.textMuted, fontSize: 13, marginBottom: 6 },

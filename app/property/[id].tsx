@@ -4,7 +4,12 @@ import {
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import * as Location from "expo-location";
+// expo-location: use native module on mobile, browser API on web
+const isWeb = Platform.OS === "web";
+let Location: typeof import("expo-location") | null = null;
+if (!isWeb) {
+  Location = require("expo-location");
+}
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { useLanguage } from "../../context/LanguageContext";
@@ -12,6 +17,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, radii } from "../../constants/theme";
+import { WebDateInput, modalBackdropStyle } from "../../components/WebDateInput";
 
 type TenantMap = Record<string, { id: string; name: string; status: string; monthly_rent: number }>;
 type LabelMap = Record<string, string>;
@@ -100,10 +106,25 @@ export default function PropertyUnitsScreen() {
 
   async function detectCityFromLocation() {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (isWeb) {
+        // Web: use browser Geolocation API (no reverse geocoding)
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setEditForm((prev) => ({
+              ...prev,
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            }));
+          },
+          () => { /* denied or error — user can pick city manually */ }
+        );
+        return;
+      }
+      const { status } = await Location!.requestForegroundPermissionsAsync();
       if (status !== "granted") return;
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const [geo] = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+      const loc = await Location!.getCurrentPositionAsync({ accuracy: Location!.Accuracy.Balanced });
+      const [geo] = await Location!.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
       if (geo) {
         const cityName = geo.city || geo.subregion || geo.region || "";
         const matched = matchCity(cityName);
@@ -521,39 +542,54 @@ export default function PropertyUnitsScreen() {
       )}
 
       {/* ── Bulk Payment Modal ── */}
-      <Modal visible={bulkPayModal} animationType="slide" transparent onRequestClose={() => setBulkPayModal(false)}>
+      <Modal visible={bulkPayModal} animationType={isWeb ? "fade" : "slide"} transparent onRequestClose={() => setBulkPayModal(false)}>
         <View style={S.editModalOverlay}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setBulkPayModal(false)} />
+          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => setBulkPayModal(false)} />
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
             <ScrollView bounces={false} keyboardShouldPersistTaps="handled" style={{ maxHeight: "100%" }}>
             <View style={S.editModalBox}>
               <Text style={S.modalTitle}>{t("collectPaymentTitle")}</Text>
 
               <Text style={S.editFieldLabel}>{t("paymentDate")}</Text>
-              <TouchableOpacity
-                style={S.editInput}
-                onPress={() => setShowBulkPayDatePicker(true)}
-              >
-                <Text style={{ color: C.text, fontSize: 15 }}>📅 {bulkPayDate}</Text>
-              </TouchableOpacity>
-              {showBulkPayDatePicker && (
+              {isWeb ? (
+                <WebDateInput
+                  value={bulkPayDate}
+                  onChange={(val) => {
+                    setBulkPayDate(val);
+                    setBulkPayDateObj(new Date(val + "T12:00:00"));
+                  }}
+                  textColor={C.text}
+                  backgroundColor={C.surfaceElevated}
+                  borderColor={C.border}
+                />
+              ) : (
                 <>
-                  <DateTimePicker
-                    value={bulkPayDateObj}
-                    mode="date"
-                    display="spinner"
-                    locale="en-US"
-                    themeVariant={isDark ? "dark" : "light"}
-                    onChange={(_, date) => {
-                      if (date) {
-                        setBulkPayDateObj(date);
-                        setBulkPayDate(date.toISOString().split("T")[0]);
-                      }
-                    }}
-                  />
-                  <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowBulkPayDatePicker(false)}>
-                    <Text style={S.pickerConfirmText}>✓</Text>
+                  <TouchableOpacity
+                    style={S.editInput}
+                    onPress={() => setShowBulkPayDatePicker(true)}
+                  >
+                    <Text style={{ color: C.text, fontSize: 15 }}>📅 {bulkPayDate}</Text>
                   </TouchableOpacity>
+                  {showBulkPayDatePicker && (
+                    <>
+                      <DateTimePicker
+                        value={bulkPayDateObj}
+                        mode="date"
+                        display="spinner"
+                        locale="en-US"
+                        themeVariant={isDark ? "dark" : "light"}
+                        onChange={(_, date) => {
+                          if (date) {
+                            setBulkPayDateObj(date);
+                            setBulkPayDate(date.toISOString().split("T")[0]);
+                          }
+                        }}
+                      />
+                      <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowBulkPayDatePicker(false)}>
+                        <Text style={S.pickerConfirmText}>✓</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </>
               )}
 
@@ -631,9 +667,9 @@ export default function PropertyUnitsScreen() {
       </Modal>
 
       {/* ── Edit Property Modal ── */}
-      <Modal visible={editModal} animationType="slide" transparent onRequestClose={() => setEditModal(false)}>
+      <Modal visible={editModal} animationType={isWeb ? "fade" : "slide"} transparent onRequestClose={() => setEditModal(false)}>
         <View style={S.editModalOverlay}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { dismissAll(); setEditModal(false); }} />
+          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setEditModal(false); }} />
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }}>
             <ScrollView keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={true}>
               <View style={S.editModalBox}>
@@ -808,8 +844,8 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   chipTextVacant: { color: C.textMuted },
   chevron: { fontSize: 18, color: C.textMuted },
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", paddingHorizontal: spacing.lg, ...(Platform.OS === "web" ? { alignItems: "center" } : {}) },
-  modalBox: { backgroundColor: C.surface, borderRadius: radii.lg, padding: spacing.lg, ...shadow, ...(Platform.OS === "web" ? { maxWidth: 480, width: "100%" } : {}) },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", paddingHorizontal: spacing.lg, ...(Platform.OS === "web" ? { alignItems: "center", backdropFilter: 'blur(8px)' } as any : {}) },
+  modalBox: { backgroundColor: C.surface, borderRadius: radii.lg, padding: spacing.lg, ...shadow, ...(Platform.OS === "web" ? { maxWidth: 480, width: "100%", boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' } as any : {}) },
   modalTitle: { fontSize: 16, fontWeight: "700", color: C.text, marginBottom: 16 },
   labelInput: { backgroundColor: C.surfaceElevated, borderRadius: radii.sm, borderWidth: 1, borderColor: C.border, paddingHorizontal: 14, paddingVertical: 12, color: C.text, fontSize: 15, marginBottom: 8 },
   labelHint: { fontSize: 12, color: C.textMuted, marginBottom: 20 },
@@ -846,8 +882,8 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   bulkPreviewName: { flex: 1, fontSize: 14, fontWeight: "600", color: C.text, marginHorizontal: 4 },
   bulkPreviewAmount: { fontSize: 13, fontWeight: "600", color: C.accent },
   // Edit Property modal
-  editModalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === "web" ? { justifyContent: "center", alignItems: "center", paddingHorizontal: 16 } : {}) },
-  editModalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40, ...(Platform.OS === "web" ? { borderRadius: 20, maxWidth: 560, width: "100%", paddingBottom: spacing.lg } : {}) },
+  editModalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === "web" ? { justifyContent: "center", paddingHorizontal: 16, backdropFilter: 'blur(8px)' } as any : {}) },
+  editModalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40, ...(Platform.OS === "web" ? { borderRadius: 20, maxWidth: 560, width: "100%", alignSelf: "center" as any, paddingBottom: spacing.lg, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' } as any : {}) },
   editFieldLabel: { fontSize: 12, color: C.textMuted, marginBottom: 6, marginTop: 14 },
   editInput: { backgroundColor: C.surfaceElevated, borderRadius: radii.sm, borderWidth: 1, borderColor: C.border, paddingHorizontal: 14, paddingVertical: 12, color: C.text, fontSize: 15 },
   pickerConfirm: {
