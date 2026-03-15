@@ -81,5 +81,5 @@ export function WebDateInput({
  * On native: flex: 1 for the bottom-sheet pattern.
  */
 export const modalBackdropStyle = Platform.OS === "web"
-  ? (StyleSheet.absoluteFill as any)
+  ? { ...StyleSheet.absoluteFillObject, zIndex: 0 } as any
   : { flex: 1 };

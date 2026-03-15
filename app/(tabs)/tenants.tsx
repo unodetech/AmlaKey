@@ -28,6 +28,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, radii } from "../../constants/theme";
 import { userKey, EJAR_IMPORT_KEY } from "../../lib/storage";
 import WebContainer from "../../components/WebContainer";
+import { WebDateInput, modalBackdropStyle } from "../../components/WebDateInput";
+
+const isWeb = Platform.OS === "web";
 
 type TenantStatus = "active" | "expired";
 type FilterType = "all" | TenantStatus;
@@ -662,7 +665,7 @@ true;
         {/* Add Choice Modal — Manual vs Ejar */}
         <Modal visible={addChoiceVisible} animationType="fade" transparent onRequestClose={() => setAddChoiceVisible(false)}>
           <View style={S.modalOverlay}>
-            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setAddChoiceVisible(false)} />
+            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => setAddChoiceVisible(false)} />
               <View style={S.choiceBox}>
                 <Text style={S.choiceTitle}>{t("addTenant")}</Text>
                 <TouchableOpacity
@@ -712,8 +715,8 @@ true;
         {/* Add Tenant Modal */}
         <Modal visible={modalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setModalVisible(false)}>
           <View style={S.modalOverlay}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { dismissAll(); setModalVisible(false); }} />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }}>
+            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setModalVisible(false); }} />
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%", ...(Platform.OS === 'web' ? { zIndex: 1 } : {}) }}>
               <ScrollView ref={addTenantScrollRef} keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View style={S.modalBox}>
                   <Text style={S.modalTitle}>{t("addTenant")}</Text>
@@ -769,63 +772,93 @@ true;
 
                   {/* Lease Start Date Picker */}
                   <Text style={S.fieldLabel}>{t("leaseStart")}</Text>
-                  <TouchableOpacity
-                    style={S.datePickerBtn}
-                    onPress={() => { Keyboard.dismiss(); setShowLeaseEnd(false); setShowLeaseStart(true); setTimeout(() => addTenantScrollRef.current?.scrollToEnd({ animated: true }), 100); }}
-                  >
-                    <Text style={S.datePickerText}>
-                      📅 {form.lease_start || (t("selectDate") ?? "Select date")}
-                    </Text>
-                  </TouchableOpacity>
-                  {showLeaseStart && (
+                  {isWeb ? (
+                    <WebDateInput
+                      value={form.lease_start}
+                      onChange={(val) => {
+                        setForm({ ...form, lease_start: val });
+                        if (val) setLeaseStartDate(new Date(val + "T00:00:00"));
+                      }}
+                      textColor={C.text}
+                      backgroundColor={C.surfaceElevated}
+                      borderColor={C.border}
+                    />
+                  ) : (
                     <>
-                      <DateTimePicker
-                        value={leaseStartDate}
-                        mode="date"
-                        display="spinner"
-                        locale="en-US"
-                        themeVariant={isDark ? "dark" : "light"}
-                        onChange={(_, date) => {
-                          if (date) {
-                            setLeaseStartDate(date);
-                            setForm({ ...form, lease_start: formatDate(date) });
-                          }
-                        }}
-                      />
-                      <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowLeaseStart(false)}>
-                        <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                      <TouchableOpacity
+                        style={S.datePickerBtn}
+                        onPress={() => { Keyboard.dismiss(); setShowLeaseEnd(false); setShowLeaseStart(true); setTimeout(() => addTenantScrollRef.current?.scrollToEnd({ animated: true }), 100); }}
+                      >
+                        <Text style={S.datePickerText}>
+                          📅 {form.lease_start || (t("selectDate") ?? "Select date")}
+                        </Text>
                       </TouchableOpacity>
+                      {showLeaseStart && (
+                        <>
+                          <DateTimePicker
+                            value={leaseStartDate}
+                            mode="date"
+                            display="spinner"
+                            locale="en-US"
+                            themeVariant={isDark ? "dark" : "light"}
+                            onChange={(_, date) => {
+                              if (date) {
+                                setLeaseStartDate(date);
+                                setForm({ ...form, lease_start: formatDate(date) });
+                              }
+                            }}
+                          />
+                          <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowLeaseStart(false)}>
+                            <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
                     </>
                   )}
 
                   {/* Lease End Date Picker — Required */}
                   <Text style={[S.fieldLabel, { marginTop: 8 }]}>{t("leaseEnd")} *</Text>
-                  <TouchableOpacity
-                    style={S.datePickerBtn}
-                    onPress={() => { Keyboard.dismiss(); setShowLeaseStart(false); setShowLeaseEnd(true); if (!form.lease_end) { setForm({ ...form, lease_end: formatDate(leaseEndDate) }); } setTimeout(() => addTenantScrollRef.current?.scrollToEnd({ animated: true }), 100); }}
-                  >
-                    <Text style={[S.datePickerText, !form.lease_end && { color: C.textMuted }]}>
-                      📅 {form.lease_end || (t("selectDate") ?? "Select date")}
-                    </Text>
-                  </TouchableOpacity>
-                  {showLeaseEnd && (
+                  {isWeb ? (
+                    <WebDateInput
+                      value={form.lease_end}
+                      onChange={(val) => {
+                        setForm({ ...form, lease_end: val });
+                        if (val) setLeaseEndDate(new Date(val + "T00:00:00"));
+                      }}
+                      textColor={C.text}
+                      backgroundColor={C.surfaceElevated}
+                      borderColor={C.border}
+                    />
+                  ) : (
                     <>
-                      <DateTimePicker
-                        value={leaseEndDate}
-                        mode="date"
-                        display="spinner"
-                        locale="en-US"
-                        themeVariant={isDark ? "dark" : "light"}
-                        onChange={(_, date) => {
-                          if (date) {
-                            setLeaseEndDate(date);
-                            setForm({ ...form, lease_end: formatDate(date) });
-                          }
-                        }}
-                      />
-                      <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowLeaseEnd(false)}>
-                        <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                      <TouchableOpacity
+                        style={S.datePickerBtn}
+                        onPress={() => { Keyboard.dismiss(); setShowLeaseStart(false); setShowLeaseEnd(true); if (!form.lease_end) { setForm({ ...form, lease_end: formatDate(leaseEndDate) }); } setTimeout(() => addTenantScrollRef.current?.scrollToEnd({ animated: true }), 100); }}
+                      >
+                        <Text style={[S.datePickerText, !form.lease_end && { color: C.textMuted }]}>
+                          📅 {form.lease_end || (t("selectDate") ?? "Select date")}
+                        </Text>
                       </TouchableOpacity>
+                      {showLeaseEnd && (
+                        <>
+                          <DateTimePicker
+                            value={leaseEndDate}
+                            mode="date"
+                            display="spinner"
+                            locale="en-US"
+                            themeVariant={isDark ? "dark" : "light"}
+                            onChange={(_, date) => {
+                              if (date) {
+                                setLeaseEndDate(date);
+                                setForm({ ...form, lease_end: formatDate(date) });
+                              }
+                            }}
+                          />
+                          <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowLeaseEnd(false)}>
+                            <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
                     </>
                   )}
 
@@ -868,8 +901,8 @@ true;
         {/* Collect Payment Modal */}
         <Modal visible={payModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setPayModalVisible(false)}>
           <View style={S.modalOverlay}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { dismissAll(); setPayModalVisible(false); }} />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setPayModalVisible(false); }} />
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={Platform.OS === 'web' ? { zIndex: 1 } : undefined}>
               <View style={S.modalBox}>
                 <Text style={S.modalTitle}>💰 {t("markAsPaid") ?? "Collect Payment"}</Text>
                 {payTenant && (
@@ -890,27 +923,41 @@ true;
                 />
 
                 <Text style={S.fieldLabel}>{t("date")}</Text>
-                <TouchableOpacity
-                  style={S.datePickerBtn}
-                  onPress={() => setShowPayDatePicker(true)}
-                >
-                  <Text style={S.datePickerText}>📅 {formatDate(payDate)}</Text>
-                </TouchableOpacity>
-                {showPayDatePicker && (
+                {isWeb ? (
+                  <WebDateInput
+                    value={formatDate(payDate)}
+                    onChange={(val) => {
+                      if (val) setPayDate(new Date(val + "T00:00:00"));
+                    }}
+                    textColor={C.text}
+                    backgroundColor={C.surfaceElevated}
+                    borderColor={C.border}
+                  />
+                ) : (
                   <>
-                    <DateTimePicker
-                      value={payDate}
-                      mode="date"
-                      display="spinner"
-                      locale="en-US"
-                      themeVariant={isDark ? "dark" : "light"}
-                      onChange={(_, date) => {
-                        if (date) setPayDate(date);
-                      }}
-                    />
-                    <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowPayDatePicker(false)}>
-                      <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                    <TouchableOpacity
+                      style={S.datePickerBtn}
+                      onPress={() => setShowPayDatePicker(true)}
+                    >
+                      <Text style={S.datePickerText}>📅 {formatDate(payDate)}</Text>
                     </TouchableOpacity>
+                    {showPayDatePicker && (
+                      <>
+                        <DateTimePicker
+                          value={payDate}
+                          mode="date"
+                          display="spinner"
+                          locale="en-US"
+                          themeVariant={isDark ? "dark" : "light"}
+                          onChange={(_, date) => {
+                            if (date) setPayDate(date);
+                          }}
+                        />
+                        <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowPayDatePicker(false)}>
+                          <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
                   </>
                 )}
 
@@ -930,8 +977,8 @@ true;
         {/* Edit Tenant Modal */}
         <Modal visible={editModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setEditModalVisible(false)}>
           <View style={S.modalOverlay}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { dismissAll(); setEditModalVisible(false); }} />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }}>
+            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setEditModalVisible(false); }} />
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%", ...(Platform.OS === 'web' ? { zIndex: 1 } : {}) }}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View style={S.modalBox}>
                   <Text style={S.modalTitle}>{t("edit") ?? "Edit"} {editTenant?.name}</Text>
@@ -957,24 +1004,39 @@ true;
 
                   {/* Lease Start */}
                   <Text style={S.fieldLabel}>{t("leaseStart")}</Text>
-                  <TouchableOpacity style={S.datePickerBtn} onPress={() => setShowEditLeaseStart(true)}>
-                    <Text style={S.datePickerText}>📅 {editForm.lease_start || (t("selectDate") ?? "Select date")}</Text>
-                  </TouchableOpacity>
-                  {showEditLeaseStart && (
+                  {isWeb ? (
+                    <WebDateInput
+                      value={editForm.lease_start}
+                      onChange={(val) => {
+                        setEditForm({ ...editForm, lease_start: val });
+                        if (val) setEditLeaseStartDate(new Date(val + "T00:00:00"));
+                      }}
+                      textColor={C.text}
+                      backgroundColor={C.surfaceElevated}
+                      borderColor={C.border}
+                    />
+                  ) : (
                     <>
-                      <DateTimePicker
-                        value={editLeaseStartDate}
-                        mode="date"
-                        display="spinner"
-                        locale="en-US"
-                        themeVariant={isDark ? "dark" : "light"}
-                        onChange={(_, date) => {
-                          if (date) { setEditLeaseStartDate(date); setEditForm({ ...editForm, lease_start: date.toISOString().split("T")[0] }); }
-                        }}
-                      />
-                      <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowEditLeaseStart(false)}>
-                        <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                      <TouchableOpacity style={S.datePickerBtn} onPress={() => setShowEditLeaseStart(true)}>
+                        <Text style={S.datePickerText}>📅 {editForm.lease_start || (t("selectDate") ?? "Select date")}</Text>
                       </TouchableOpacity>
+                      {showEditLeaseStart && (
+                        <>
+                          <DateTimePicker
+                            value={editLeaseStartDate}
+                            mode="date"
+                            display="spinner"
+                            locale="en-US"
+                            themeVariant={isDark ? "dark" : "light"}
+                            onChange={(_, date) => {
+                              if (date) { setEditLeaseStartDate(date); setEditForm({ ...editForm, lease_start: date.toISOString().split("T")[0] }); }
+                            }}
+                          />
+                          <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowEditLeaseStart(false)}>
+                            <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
                     </>
                   )}
 
@@ -994,24 +1056,39 @@ true;
                           <Text style={{ color: "#EF4444", fontSize: 12, fontWeight: "600" }}>✕ {t("removeLeaseEnd")}</Text>
                         </TouchableOpacity>
                       </View>
-                      <TouchableOpacity style={S.datePickerBtn} onPress={() => setShowEditLeaseEnd(true)}>
-                        <Text style={S.datePickerText}>📅 {editForm.lease_end || (t("selectDate") ?? "Select date")}</Text>
-                      </TouchableOpacity>
-                      {showEditLeaseEnd && (
+                      {isWeb ? (
+                        <WebDateInput
+                          value={editForm.lease_end}
+                          onChange={(val) => {
+                            setEditForm({ ...editForm, lease_end: val });
+                            if (val) setEditLeaseEndDate(new Date(val + "T00:00:00"));
+                          }}
+                          textColor={C.text}
+                          backgroundColor={C.surfaceElevated}
+                          borderColor={C.border}
+                        />
+                      ) : (
                         <>
-                          <DateTimePicker
-                            value={editLeaseEndDate}
-                            mode="date"
-                            display="spinner"
-                            locale="en-US"
-                            themeVariant={isDark ? "dark" : "light"}
-                            onChange={(_, date) => {
-                              if (date) { setEditLeaseEndDate(date); setEditForm({ ...editForm, lease_end: date.toISOString().split("T")[0] }); }
-                            }}
-                          />
-                          <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowEditLeaseEnd(false)}>
-                            <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                          <TouchableOpacity style={S.datePickerBtn} onPress={() => setShowEditLeaseEnd(true)}>
+                            <Text style={S.datePickerText}>📅 {editForm.lease_end || (t("selectDate") ?? "Select date")}</Text>
                           </TouchableOpacity>
+                          {showEditLeaseEnd && (
+                            <>
+                              <DateTimePicker
+                                value={editLeaseEndDate}
+                                mode="date"
+                                display="spinner"
+                                locale="en-US"
+                                themeVariant={isDark ? "dark" : "light"}
+                                onChange={(_, date) => {
+                                  if (date) { setEditLeaseEndDate(date); setEditForm({ ...editForm, lease_end: date.toISOString().split("T")[0] }); }
+                                }}
+                              />
+                              <TouchableOpacity style={S.pickerConfirm} onPress={() => setShowEditLeaseEnd(false)}>
+                                <Text style={S.pickerConfirmText}>{t("done")}</Text>
+                              </TouchableOpacity>
+                            </>
+                          )}
                         </>
                       )}
                     </>
@@ -1114,10 +1191,10 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   emptyText: { textAlign: "center", color: C.textMuted, marginTop: 0, fontSize: 15 },
   emptyAddBtn: { marginTop: 16, backgroundColor: C.accent, borderRadius: radii.md, paddingHorizontal: 24, paddingVertical: 12 },
   emptyAddBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === 'web' ? { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 } : {}) },
-  modalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', borderRadius: 20, alignSelf: 'center', paddingBottom: spacing.lg } : {}) },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === 'web' ? { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, backdropFilter: 'blur(8px)' } as any : {}) },
+  modalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', borderRadius: 20, alignSelf: 'center', paddingBottom: spacing.lg, zIndex: 1 } : {}) },
   modalTitle: { fontSize: 20, fontWeight: "700", color: C.text, marginBottom: 16, textAlign: "center" },
-  choiceBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 30, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', borderRadius: 24, alignSelf: 'center' } : {}) },
+  choiceBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 30, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', borderRadius: 24, alignSelf: 'center', zIndex: 1 } : {}) },
   choiceTitle: { fontSize: 20, fontWeight: "700", color: C.text, textAlign: "center", marginBottom: 20 },
   choiceOption: { flexDirection: "row", alignItems: "center", backgroundColor: C.background, borderRadius: radii.lg, padding: 16, marginBottom: 10, borderWidth: 1.5, borderColor: C.border, gap: 14 },
   choiceOptionEjar: { borderColor: "#25935f60", backgroundColor: "#25935f08" },

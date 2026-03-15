@@ -845,7 +845,7 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   chevron: { fontSize: 18, color: C.textMuted },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", paddingHorizontal: spacing.lg, ...(Platform.OS === "web" ? { alignItems: "center", backdropFilter: 'blur(8px)' } as any : {}) },
-  modalBox: { backgroundColor: C.surface, borderRadius: radii.lg, padding: spacing.lg, ...shadow, ...(Platform.OS === "web" ? { maxWidth: 480, width: "100%", boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' } as any : {}) },
+  modalBox: { backgroundColor: C.surface, borderRadius: radii.lg, padding: spacing.lg, ...shadow, ...(Platform.OS === "web" ? { maxWidth: 480, width: "100%", boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', zIndex: 1 } as any : {}) },
   modalTitle: { fontSize: 16, fontWeight: "700", color: C.text, marginBottom: 16 },
   labelInput: { backgroundColor: C.surfaceElevated, borderRadius: radii.sm, borderWidth: 1, borderColor: C.border, paddingHorizontal: 14, paddingVertical: 12, color: C.text, fontSize: 15, marginBottom: 8 },
   labelHint: { fontSize: 12, color: C.textMuted, marginBottom: 20 },
@@ -883,7 +883,7 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   bulkPreviewAmount: { fontSize: 13, fontWeight: "600", color: C.accent },
   // Edit Property modal
   editModalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === "web" ? { justifyContent: "center", paddingHorizontal: 16, backdropFilter: 'blur(8px)' } as any : {}) },
-  editModalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40, ...(Platform.OS === "web" ? { borderRadius: 20, maxWidth: 560, width: "100%", alignSelf: "center" as any, paddingBottom: spacing.lg, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' } as any : {}) },
+  editModalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40, ...(Platform.OS === "web" ? { borderRadius: 20, maxWidth: 560, width: "100%", alignSelf: "center" as any, paddingBottom: spacing.lg, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', zIndex: 1 } as any : {}) },
   editFieldLabel: { fontSize: 12, color: C.textMuted, marginBottom: 6, marginTop: 14 },
   editInput: { backgroundColor: C.surfaceElevated, borderRadius: radii.sm, borderWidth: 1, borderColor: C.border, paddingHorizontal: 14, paddingVertical: 12, color: C.text, fontSize: 15 },
   pickerConfirm: {

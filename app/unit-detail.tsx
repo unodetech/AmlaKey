@@ -1778,7 +1778,7 @@ const styles = (C: any, shadow: any) =>
       ...(Platform.OS === "web" ? { justifyContent: "center", paddingHorizontal: 16, backdropFilter: 'blur(8px)' } as any : {}),
     },
     // Choice modal
-    choiceBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 30, ...(Platform.OS === "web" ? { borderRadius: 20, maxWidth: 480, width: "100%", alignSelf: "center" } : {}) },
+    choiceBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 30, ...(Platform.OS === "web" ? { borderRadius: 20, maxWidth: 480, width: "100%", alignSelf: "center", zIndex: 1 } : {}) },
     choiceTitle: { fontSize: 20, fontWeight: "700", color: C.text, textAlign: "center", marginBottom: 20 },
     choiceOption: { flexDirection: "row", alignItems: "center", backgroundColor: C.background, borderRadius: radii.lg, padding: 16, marginBottom: 10, borderWidth: 1.5, borderColor: C.border, gap: 14 },
     choiceOptionEjar: { borderColor: "#25935f60", backgroundColor: "#25935f08" },
@@ -1793,7 +1793,7 @@ const styles = (C: any, shadow: any) =>
       padding: spacing.lg,
       paddingBottom: Platform.OS === "ios" ? 40 : spacing.lg,
       maxHeight: "92%",
-      ...(Platform.OS === "web" ? { borderRadius: 20, maxWidth: 520, width: "100%", maxHeight: "85%" as any, paddingBottom: spacing.lg, alignSelf: "center" as any, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' } as any : {}),
+      ...(Platform.OS === "web" ? { borderRadius: 20, maxWidth: 520, width: "100%", maxHeight: "85%" as any, paddingBottom: spacing.lg, alignSelf: "center" as any, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', zIndex: 1 } as any : {}),
     },
     modalTitle: {
       fontSize: 18,
