@@ -29,7 +29,7 @@ const METRIC_TABS: { key: MetricTab; icon: string; labelKey: TKey; color: string
 
 /** Build month labels from JS Intl so we get localised names for free */
 function getMonthLabels(lang: string): { month: number; label: string }[] {
-  const locale = lang === "ar" ? "ar-SA" : "en-US";
+  const locale = lang === "ar" ? "ar-SA-u-ca-gregory" : "en-US";
   return Array.from({ length: 12 }, (_, i) => ({
     month: i + 1,
     label: new Date(2026, i, 1).toLocaleDateString(locale, { month: "long" }),
