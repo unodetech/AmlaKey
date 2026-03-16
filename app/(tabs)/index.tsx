@@ -16,7 +16,7 @@ import { useOnboarding } from "../../hooks/useOnboarding";
 import { useNotification } from "../../context/NotificationContext";
 import { NotificationBell } from "../../components/NotificationBell";
 import { NotificationCenter } from "../../components/NotificationCenter";
-import { formatDualDate, formatMonthDual } from "../../lib/dateUtils";
+import { formatDualDate, formatMonthDual, isPaymentDueInMonth } from "../../lib/dateUtils";
 import { useAuth } from "../../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import WebContainer, { useResponsive } from "../../components/WebContainer";
@@ -153,7 +153,7 @@ export default function DashboardScreen() {
       { data: recentTenants }, { data: recentPayments }, { data: recentExpenses },
     ] = await Promise.all([
       supabase.from("properties").select("id, name, total_units"),
-      supabase.from("tenants").select("id, name, unit_number, property_id, monthly_rent, lease_start, lease_end, phone, properties!inner(name)").eq("status", "active"),
+      supabase.from("tenants").select("id, name, unit_number, property_id, monthly_rent, lease_start, lease_end, payment_frequency, phone, properties!inner(name)").eq("status", "active"),
       supabase.from("tenants").select("id, status, properties!inner(id)"),
       supabase.from("expenses").select("amount, date, properties!inner(id)").gte("date", `${thisMonth}-01`).lte("date", `${thisMonth}-31`),
       supabase.from("payments").select("amount, tenants!inner(properties!inner(id))").eq("month_year", thisMonth),
@@ -169,23 +169,28 @@ export default function DashboardScreen() {
         .order("created_at", { ascending: false }).limit(3),
     ]);
 
-    setRevenue((activeTenants ?? []).reduce((s: number, tn: any) => s + (tn.monthly_rent ?? 0), 0));
+    // Filter tenants to only those whose payment is due this month (respects frequency)
+    const currentMonthTenants = (activeTenants ?? []).filter((tn: any) =>
+      isPaymentDueInMonth(tn.lease_start, tn.lease_end, tn.payment_frequency, thisMonth)
+    );
+
+    setRevenue(currentMonthTenants.reduce((s: number, tn: any) => s + (tn.monthly_rent ?? 0), 0));
     setCollected(payData?.reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0);
     setExpenses(expData?.reduce((s, e) => s + (e.amount ?? 0), 0) ?? 0);
     const units = (props ?? []).reduce((s: number, p: any) => s + p.total_units, 0);
     setTotalUnits(units);
-    setOccupiedUnits((activeTenants ?? []).length);
+    setOccupiedUnits(currentMonthTenants.length);
     setTenantCounts({
       total: allTenants?.length ?? 0,
-      active: (activeTenants ?? []).length,
+      active: currentMonthTenants.length,
       expired: allTenants?.filter((tn) => tn.status === "expired").length ?? 0,
     });
     setPropertyOccs((props ?? []).map((p: any) => ({
       id: p.id, name: p.name, total_units: p.total_units,
-      occupied: (activeTenants ?? []).filter((tn: any) => tn.property_id === p.id).length,
+      occupied: currentMonthTenants.filter((tn: any) => tn.property_id === p.id).length,
     })));
 
-    // Compute overdue tenants — only fully paid tenants are excluded
+    // Compute overdue tenants — only from tenants whose payment is due this month
     const today = new Date();
     const currentDay = today.getDate();
     const paidByTenantMap = new Map<string, number>();
@@ -193,7 +198,7 @@ export default function DashboardScreen() {
       paidByTenantMap.set(p.tenant_id, (paidByTenantMap.get(p.tenant_id) ?? 0) + (p.amount ?? 0));
     }
     const overdueList: OverdueTenant[] = [];
-    for (const tn of (activeTenants ?? [])) {
+    for (const tn of currentMonthTenants) {
       if (!tn.lease_start) continue;
       const dueDay = new Date(tn.lease_start + "T12:00:00").getDate();
       const totalPaid = paidByTenantMap.get(tn.id) ?? 0;

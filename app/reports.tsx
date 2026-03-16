@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, radii } from "../constants/theme";
 import * as XLSX from "xlsx";
 import { useSubscription } from "../context/SubscriptionContext";
+import { isPaymentDueInMonth } from "../lib/dateUtils";
 
 const isWeb = Platform.OS === "web";
 
@@ -101,13 +102,22 @@ export default function ReportsScreen() {
         supabase.from("properties").select("id, name"),
         supabase.from("payments").select("*").gte("payment_date", startDate).lte("payment_date", endDate),
         supabase.from("expenses").select("*").gte("date", startDate).lte("date", endDate),
-        supabase.from("tenants").select("id, name, monthly_rent, property_id, status").eq("status", "active"),
+        supabase.from("tenants").select("id, name, monthly_rent, property_id, lease_start, lease_end, payment_frequency, status").eq("status", "active"),
       ]);
 
       const allPayments = payments || [];
       const allExpenses = expenses || [];
       const allTenants = tenants || [];
-      const totalRevenue = allTenants.reduce((s: number, t: any) => s + (t.monthly_rent || 0), 0) * monthCount;
+      // Calculate revenue per month, respecting lease period and payment frequency
+      const periodStart = new Date(startDate + "T00:00:00");
+      let totalRevenue = 0;
+      for (let mi = 0; mi < monthCount; mi++) {
+        const mStart = new Date(periodStart.getFullYear(), periodStart.getMonth() + mi, 1);
+        const my = `${mStart.getFullYear()}-${String(mStart.getMonth() + 1).padStart(2, "0")}`;
+        totalRevenue += allTenants
+          .filter((t: any) => isPaymentDueInMonth(t.lease_start, t.lease_end, t.payment_frequency, my))
+          .reduce((s: number, t: any) => s + (t.monthly_rent || 0), 0);
+      }
       const totalCollected = allPayments.reduce((s: number, p: any) => s + (p.amount || 0), 0);
       const totalExp = allExpenses.reduce((s: number, e: any) => s + (e.amount || 0), 0);
 

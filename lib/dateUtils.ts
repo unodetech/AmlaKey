@@ -51,6 +51,42 @@ export function formatDualDate(
   return `${greg}  ·  ${hijri}`;
 }
 
+/**
+ * Check if a tenant's payment is due in a given month based on their payment frequency.
+ * - monthly: due every month
+ * - semi_annual: due every 6 months from lease_start
+ * - annual: due every 12 months from lease_start
+ *
+ * Also checks that the lease period covers the given month.
+ */
+export function isPaymentDueInMonth(
+  leaseStart?: string,
+  leaseEnd?: string | null,
+  frequency?: string,
+  monthStr?: string,
+): boolean {
+  if (!leaseStart || !monthStr) return false;
+
+  const mStart = new Date(`${monthStr}-01T00:00:00`);
+  const mEnd = new Date(mStart.getFullYear(), mStart.getMonth() + 1, 0);
+  const ls = new Date(leaseStart + "T00:00:00");
+
+  if (ls > mEnd) return false;
+  if (leaseEnd) {
+    const le = new Date(leaseEnd + "T23:59:59");
+    if (le < mStart) return false;
+  }
+
+  const freq = frequency || "monthly";
+  if (freq === "monthly") return true;
+
+  const monthsElapsed = (mStart.getFullYear() - ls.getFullYear()) * 12 + (mStart.getMonth() - ls.getMonth());
+  if (monthsElapsed < 0) return false;
+
+  const interval = freq === "annual" ? 12 : freq === "semi_annual" ? 6 : 1;
+  return monthsElapsed % interval === 0;
+}
+
 /** Format a month string (YYYY-MM) as "March 2026" or "مارس 2026" with optional Hijri */
 export function formatMonthDual(
   monthStr: string,
