@@ -100,10 +100,10 @@ export default function PerformanceScreen() {
 
     let propsQ = supabase.from("properties").select("id, name");
     let tenantsQ = supabase.from("tenants")
-      .select("id, name, unit_number, property_id, monthly_rent, lease_start, lease_end, status, payment_frequency, properties(name)")
+      .select("id, name, unit_number, property_id, monthly_rent, lease_start, lease_end, status, payment_frequency, properties!inner(name)")
       .eq("status", "active");
     let paysQ = supabase.from("payments")
-      .select("id, amount, month_year, payment_date, tenant_id, property_id, created_at, tenants(name, unit_number, properties(name))")
+      .select("id, amount, month_year, payment_date, tenant_id, property_id, created_at, tenants!inner(name, unit_number, properties!inner(name))")
       .gte("month_year", monthYears[0])
       .lte("month_year", monthYears[monthYears.length - 1])
       .order("created_at", { ascending: false });
@@ -131,7 +131,7 @@ export default function PerformanceScreen() {
     // Overdue computation — uses selected month filter
     {
       const targetMonth = monthYears[0]; // e.g. "2026-03"
-      const { data: monthPays } = await supabase.from("payments").select("tenant_id, amount").eq("month_year", targetMonth);
+      const { data: monthPays } = await supabase.from("payments").select("tenant_id, amount").eq("month_year", targetMonth).not("property_id", "is", null);
       const paidByTenantMap = new Map<string, number>();
       for (const p of (monthPays ?? [])) {
         paidByTenantMap.set(p.tenant_id, (paidByTenantMap.get(p.tenant_id) ?? 0) + (p.amount ?? 0));
