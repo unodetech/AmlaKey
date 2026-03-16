@@ -186,7 +186,7 @@ export default function PropertiesScreen() {
     setLoading(true);
     const [{ data: propData }, { data: tenantData }] = await Promise.all([
       supabase.from("properties").select("*").order("created_at", { ascending: false }),
-      supabase.from("tenants").select("property_id, monthly_rent").eq("status", "active"),
+      supabase.from("tenants").select("property_id, monthly_rent").eq("status", "active").not("property_id", "is", null),
     ]);
     if (propData) setProperties(propData);
     // Build income map from active tenant rents

@@ -98,9 +98,9 @@ export default function ReportsScreen() {
       const { startDate, endDate, monthYear } = getDateRange(selectedMonth);
       const [{ data: props }, { data: payments }, { data: expenses }, { data: tenants }] = await Promise.all([
         supabase.from("properties").select("id, name"),
-        supabase.from("payments").select("*").gte("payment_date", startDate).lte("payment_date", endDate),
+        supabase.from("payments").select("*").gte("payment_date", startDate).lte("payment_date", endDate).not("property_id", "is", null),
         supabase.from("expenses").select("*").gte("date", startDate).lte("date", endDate),
-        supabase.from("tenants").select("id, name, monthly_rent, property_id, lease_start, lease_end, payment_frequency, status").eq("status", "active"),
+        supabase.from("tenants").select("id, name, monthly_rent, property_id, lease_start, lease_end, payment_frequency, status, properties!inner(name)").eq("status", "active"),
       ]);
 
       const allPayments = payments || [];
