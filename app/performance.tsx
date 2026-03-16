@@ -43,7 +43,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 /* ── date range helper ── */
-function getDateRange(period: TimePeriod) {
+function getDateRange(period: TimePeriod, earliestDate?: string) {
   const now = new Date();
   const y = now.getFullYear();
   const m = now.getMonth();
@@ -56,7 +56,9 @@ function getDateRange(period: TimePeriod) {
     case "last3Months": start = new Date(y, m - 2, 1); break;
     case "last6Months": start = new Date(y, m - 5, 1); break;
     case "thisYear":    start = new Date(y, 0, 1); break;
-    case "allTime":     start = new Date(2020, 0, 1); break;
+    case "allTime":
+      start = earliestDate ? new Date(earliestDate + "T00:00:00") : new Date(y, 0, 1);
+      break;
   }
 
   const monthYears: string[] = [];
@@ -71,6 +73,36 @@ function getDateRange(period: TimePeriod) {
     endDate: `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`,
     monthYears,
   };
+}
+
+/** How many payment periods fall within a range of months for a given frequency */
+function getFrequencyMultiplier(freq: string): number {
+  switch (freq) {
+    case "annual": return 12;
+    case "semi_annual": return 6;
+    case "quarterly": return 3;
+    default: return 1; // monthly
+  }
+}
+
+/** Calculate expected revenue for a tenant within a date range, respecting lease dates and payment frequency */
+function calcTenantRevenue(tn: any, monthYears: string[]): number {
+  if (!tn.lease_start || !tn.monthly_rent) return 0;
+  const freq = tn.payment_frequency || "monthly";
+  const freqMonths = getFrequencyMultiplier(freq);
+  const leaseStart = tn.lease_start.slice(0, 7); // YYYY-MM
+  const leaseEnd = tn.lease_end ? tn.lease_end.slice(0, 7) : "9999-12";
+
+  // Count how many months in the range overlap with the lease period
+  let activeMonths = 0;
+  for (const my of monthYears) {
+    if (my >= leaseStart && my <= leaseEnd) activeMonths++;
+  }
+
+  // monthly_rent is the amount per payment period
+  // e.g., if annual and monthly_rent=9000, that's 9000/year = 9000/12 per month
+  const monthlyAmount = tn.monthly_rent / freqMonths;
+  return monthlyAmount * activeMonths;
 }
 
 /* ── component ── */
@@ -92,16 +124,31 @@ export default function PerformanceScreen() {
   const [payments, setPayments] = useState<any[]>([]);
   const [expensesData, setExpensesData] = useState<any[]>([]);
   const [overdueTenants, setOverdueTenants] = useState<any[]>([]);
+  const [earliestLeaseDate, setEarliestLeaseDate] = useState<string | undefined>();
 
   useEffect(() => { fetchData(); }, [activeTab, timePeriod, propertyFilter]);
 
   async function fetchData() {
     setLoading(true);
-    const { startDate, endDate, monthYears } = getDateRange(timePeriod);
+    // For "allTime", first find earliest lease date
+    let earliest = earliestLeaseDate;
+    if (timePeriod === "allTime" && !earliest) {
+      const { data: earlyTenant } = await supabase
+        .from("tenants")
+        .select("lease_start")
+        .not("lease_start", "is", null)
+        .order("lease_start", { ascending: true })
+        .limit(1);
+      if (earlyTenant?.[0]?.lease_start) {
+        earliest = earlyTenant[0].lease_start;
+        setEarliestLeaseDate(earliest);
+      }
+    }
+    const { startDate, endDate, monthYears } = getDateRange(timePeriod, earliest);
 
     let propsQ = supabase.from("properties").select("id, name");
     let tenantsQ = supabase.from("tenants")
-      .select("id, name, unit_number, property_id, monthly_rent, lease_start, status, properties(name)")
+      .select("id, name, unit_number, property_id, monthly_rent, lease_start, lease_end, status, payment_frequency, properties(name)")
       .eq("status", "active");
     let paysQ = supabase.from("payments")
       .select("id, amount, month_year, payment_date, tenant_id, property_id, created_at, tenants(name, unit_number, properties(name))")
@@ -160,12 +207,11 @@ export default function PerformanceScreen() {
   }
 
   /* ── computed values ── */
-  const { monthYears } = getDateRange(timePeriod);
-  const monthCount = monthYears.length;
+  const { monthYears } = getDateRange(timePeriod, earliestLeaseDate);
 
   const totalRevenue = useMemo(() =>
-    activeTenants.reduce((s, tn) => s + (tn.monthly_rent ?? 0), 0) * monthCount,
-    [activeTenants, monthCount]);
+    activeTenants.reduce((s, tn) => s + calcTenantRevenue(tn, monthYears), 0),
+    [activeTenants, monthYears]);
 
   const totalCollected = useMemo(() =>
     payments.reduce((s, p) => s + (p.amount ?? 0), 0), [payments]);
@@ -180,12 +226,13 @@ export default function PerformanceScreen() {
 
   const propertyBreakdown = useMemo(() =>
     properties.map((p) => {
-      const rev = activeTenants.filter((t) => t.property_id === p.id).reduce((s, t) => s + (t.monthly_rent ?? 0), 0);
+      const propTenants = activeTenants.filter((t) => t.property_id === p.id);
+      const rev = propTenants.reduce((s, t) => s + calcTenantRevenue(t, monthYears), 0);
       const col = payments.filter((pay) => pay.property_id === p.id).reduce((s, pay) => s + (pay.amount ?? 0), 0);
       const exp = expensesData.filter((e) => e.property_id === p.id).reduce((s, e) => s + (e.amount ?? 0), 0);
-      return { ...p, revenue: rev * monthCount, collected: col, expenses: exp, net: col - exp };
+      return { ...p, revenue: rev, collected: col, expenses: exp, net: col - exp };
     }).filter((p) => p.revenue > 0 || p.collected > 0 || p.expenses > 0),
-    [properties, activeTenants, payments, expensesData, monthCount]);
+    [properties, activeTenants, payments, expensesData, monthYears]);
 
   const categoryBreakdown = useMemo(() => {
     const cats = ["electricity", "water", "maintenance", "cleaning", "other"] as const;
@@ -200,7 +247,7 @@ export default function PerformanceScreen() {
     return monthYears.map((my) => {
       const col = payments.filter((p) => p.month_year === my).reduce((s, p) => s + (p.amount ?? 0), 0);
       const exp = expensesData.filter((e) => (e.date ?? "").startsWith(my)).reduce((s, e) => s + (e.amount ?? 0), 0);
-      const rev = activeTenants.reduce((s, t) => s + (t.monthly_rent ?? 0), 0);
+      const rev = activeTenants.reduce((s, t) => s + calcTenantRevenue(t, [my]), 0);
       return { monthYear: my, revenue: rev, collected: col, expenses: exp, net: col - exp };
     });
   }, [payments, expensesData, activeTenants, monthYears]);
