@@ -384,7 +384,7 @@ export default function PropertiesScreen() {
           {[
             { val: properties.length, lbl: t("properties") },
             { val: totalUnits, lbl: t("totalUnits") },
-            { val: totalIncome.toLocaleString(), lbl: `${t("sar")}/mo` },
+            { val: (totalIncome * 12).toLocaleString(), lbl: `${t("sar")}/${t("perYear")}` },
           ].map((item) => (
             <View key={item.lbl} style={S.summaryCard}>
               <Text style={S.summaryVal}>{item.val}</Text>
@@ -437,7 +437,7 @@ export default function PropertiesScreen() {
                     params: { name: p.name, total_units: p.total_units, type: p.type },
                   })}
                   accessibilityRole="button"
-                  accessibilityLabel={`${p.name}, ${t(p.type as any)}, ${p.total_units} ${t("units")}, ${(tenantIncomeByProp[p.id] ?? 0).toLocaleString()} ${t("sar")}`}
+                  accessibilityLabel={`${p.name}, ${t(p.type as any)}, ${p.total_units} ${t("units")}, ${((tenantIncomeByProp[p.id] ?? 0) * 12).toLocaleString()} ${t("sar")}/${t("perYear")}`}
                   accessibilityHint={t("tapToViewUnits")}
                 >
                   <View style={[S.cardHeader, isRTL && S.rowRev]}>
@@ -469,7 +469,7 @@ export default function PropertiesScreen() {
                   <View style={[S.cardStats, isRTL && S.rowRev]}>
                     <Text style={S.statText}>🏠 {p.total_units} {t("units")}</Text>
                     <Text style={S.statText}>🏗 {p.floors} {t("floors")}</Text>
-                    <Text style={S.incomeText}>{(tenantIncomeByProp[p.id] ?? 0).toLocaleString()} {t("sar")}</Text>
+                    <Text style={S.incomeText}>{((tenantIncomeByProp[p.id] ?? 0) * 12).toLocaleString()} {t("sar")}/${t("perYear")}</Text>
                   </View>
                   <Text style={[S.viewHint, isRTL && { textAlign: "right" }, { marginTop: 8 }]}>
                     {isRTL ? `‹ ${t("tapToViewUnits")}` : `${t("tapToViewUnits")} ›`}
@@ -549,42 +549,6 @@ export default function PropertiesScreen() {
                     multiline numberOfLines={3}
                     value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} />
 
-                  {/* SEC */}
-                  <Text style={S.fieldLabel}>⚡ {t("secAccount")}</Text>
-                  <View style={[S.segRow, isRTL && S.rowRev]}>
-                    <TouchableOpacity style={[S.seg, !form.has_multiple_sec && { backgroundColor: C.accent }]}
-                      onPress={() => setForm({ ...form, has_multiple_sec: false })}>
-                      <Text style={[S.segText, !form.has_multiple_sec && { color: "#fff" }]}>{t("singleAccount")}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[S.seg, form.has_multiple_sec && { backgroundColor: C.accent }]}
-                      onPress={() => setForm({ ...form, has_multiple_sec: true, sec_account: "" })}>
-                      <Text style={[S.segText, form.has_multiple_sec && { color: "#fff" }]}>{t("multipleSEC")}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {!form.has_multiple_sec ? (
-                    <TextInput style={[S.input, isRTL && { textAlign: "right" }]}
-                      placeholder={t("secAccount")} placeholderTextColor={C.textMuted}
-                      value={form.sec_account} onChangeText={(v) => setForm({ ...form, sec_account: v })}
-                      keyboardType="numeric" returnKeyType="done" />
-                  ) : <Text style={S.hintText}>💡 {t("multipleAccountsHint")}</Text>}
-                  {/* NWC */}
-                  <Text style={S.fieldLabel}>💧 {t("nwcAccount")}</Text>
-                  <View style={[S.segRow, isRTL && S.rowRev]}>
-                    <TouchableOpacity style={[S.seg, !form.has_multiple_nwc && { backgroundColor: C.accent }]}
-                      onPress={() => setForm({ ...form, has_multiple_nwc: false })}>
-                      <Text style={[S.segText, !form.has_multiple_nwc && { color: "#fff" }]}>{t("singleAccount")}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[S.seg, form.has_multiple_nwc && { backgroundColor: C.accent }]}
-                      onPress={() => setForm({ ...form, has_multiple_nwc: true, nwc_account: "" })}>
-                      <Text style={[S.segText, form.has_multiple_nwc && { color: "#fff" }]}>{t("multipleNWC")}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {!form.has_multiple_nwc ? (
-                    <TextInput style={[S.input, isRTL && { textAlign: "right" }]}
-                      placeholder={t("nwcAccount")} placeholderTextColor={C.textMuted}
-                      value={form.nwc_account} onChangeText={(v) => setForm({ ...form, nwc_account: v })}
-                      keyboardType="numeric" returnKeyType="done" />
-                  ) : <Text style={S.hintText}>💡 {t("multipleAccountsHint")}</Text>}
                   <View style={[S.modalBtns, isRTL && S.rowRev]}>
                     <TouchableOpacity style={S.cancelBtn} onPress={() => setAddVisible(false)} accessibilityRole="button" accessibilityLabel={t("cancel")}>
                       <Text style={S.cancelBtnText}>{t("cancel")}</Text>
@@ -664,42 +628,6 @@ export default function PropertiesScreen() {
                     multiline numberOfLines={3}
                     value={editForm.notes} onChangeText={(v) => setEditForm({ ...editForm, notes: v })} />
 
-                  {/* SEC */}
-                  <Text style={S.fieldLabel}>⚡ {t("secAccount")}</Text>
-                  <View style={[S.segRow, isRTL && S.rowRev]}>
-                    <TouchableOpacity style={[S.seg, !editForm.has_multiple_sec && { backgroundColor: C.accent }]}
-                      onPress={() => setEditForm({ ...editForm, has_multiple_sec: false })}>
-                      <Text style={[S.segText, !editForm.has_multiple_sec && { color: "#fff" }]}>{t("singleAccount")}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[S.seg, editForm.has_multiple_sec && { backgroundColor: C.accent }]}
-                      onPress={() => setEditForm({ ...editForm, has_multiple_sec: true, sec_account: "" })}>
-                      <Text style={[S.segText, editForm.has_multiple_sec && { color: "#fff" }]}>{t("multipleSEC")}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {!editForm.has_multiple_sec ? (
-                    <TextInput style={[S.input, isRTL && { textAlign: "right" }]}
-                      placeholder={t("secAccount")} placeholderTextColor={C.textMuted}
-                      value={editForm.sec_account} onChangeText={(v) => setEditForm({ ...editForm, sec_account: v })}
-                      keyboardType="numeric" returnKeyType="done" />
-                  ) : <Text style={S.hintText}>💡 {t("multipleAccountsHint")}</Text>}
-                  {/* NWC */}
-                  <Text style={S.fieldLabel}>💧 {t("nwcAccount")}</Text>
-                  <View style={[S.segRow, isRTL && S.rowRev]}>
-                    <TouchableOpacity style={[S.seg, !editForm.has_multiple_nwc && { backgroundColor: C.accent }]}
-                      onPress={() => setEditForm({ ...editForm, has_multiple_nwc: false })}>
-                      <Text style={[S.segText, !editForm.has_multiple_nwc && { color: "#fff" }]}>{t("singleAccount")}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[S.seg, editForm.has_multiple_nwc && { backgroundColor: C.accent }]}
-                      onPress={() => setEditForm({ ...editForm, has_multiple_nwc: true, nwc_account: "" })}>
-                      <Text style={[S.segText, editForm.has_multiple_nwc && { color: "#fff" }]}>{t("multipleNWC")}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {!editForm.has_multiple_nwc ? (
-                    <TextInput style={[S.input, isRTL && { textAlign: "right" }]}
-                      placeholder={t("nwcAccount")} placeholderTextColor={C.textMuted}
-                      value={editForm.nwc_account} onChangeText={(v) => setEditForm({ ...editForm, nwc_account: v })}
-                      keyboardType="numeric" returnKeyType="done" />
-                  ) : <Text style={S.hintText}>💡 {t("multipleAccountsHint")}</Text>}
                   <View style={[S.modalBtns, isRTL && S.rowRev]}>
                     <TouchableOpacity style={S.cancelBtn} onPress={() => setEditVisible(false)} accessibilityRole="button" accessibilityLabel={t("cancel")}>
                       <Text style={S.cancelBtnText}>{t("cancel")}</Text>

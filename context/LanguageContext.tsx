@@ -78,7 +78,7 @@ const translations = {
     save: "Save", cancel: "Cancel", done: "Done", sar: "SAR", error: "Error", payments: "Payments",
     failedToLoadData: "Failed to load data. Please try again.",
     nameRequired: "Name is required", amountRequired: "Amount is required",
-    add2: "Add", perMonth: "/mo", unitsOccupied: "units occupied",
+    add2: "Add", perMonth: "/mo", perYear: "yr", unitsOccupied: "units occupied",
     back: "Back", monthlyIncome2: "Annual Expected Income (SAR)", floorCount: "No. of Floors",
     recentTenants: "Recent Tenants",
     // Recent updates page
@@ -631,7 +631,7 @@ const translations = {
     save: "حفظ", cancel: "إلغاء", done: "تم", sar: "ريال", error: "خطأ", payments: "مدفوعات",
     failedToLoadData: "فشل تحميل البيانات. يرجى المحاولة مرة أخرى.",
     nameRequired: "الاسم مطلوب", amountRequired: "المبلغ مطلوب",
-    add2: "إضافة", perMonth: "/شهر", unitsOccupied: "وحدة مؤجرة",
+    add2: "إضافة", perMonth: "/شهر", perYear: "سنة", unitsOccupied: "وحدة مؤجرة",
     back: "رجوع", monthlyIncome2: "الدخل السنوي المتوقع (ريال)", floorCount: "عدد الأدوار",
     recentTenants: "آخر المستأجرين",
     // Recent updates page
