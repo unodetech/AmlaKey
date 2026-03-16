@@ -14,7 +14,8 @@ import { useSubscription } from "../context/SubscriptionContext";
 
 /* ── types ── */
 type MetricTab = "revenue" | "overdue" | "collected" | "expenses" | "netIncome";
-type TimePeriod = "thisMonth" | "lastMonth" | "last3Months" | "last6Months" | "thisYear" | "allTime";
+/** Month filter: 1–12 index */
+type MonthFilter = number;
 
 interface Property { id: string; name: string; }
 
@@ -26,14 +27,14 @@ const METRIC_TABS: { key: MetricTab; icon: string; labelKey: TKey; color: string
   { key: "netIncome", icon: "💵", labelKey: "netIncomeLabel",   color: "" },
 ];
 
-const TIME_PERIODS: { key: TimePeriod; labelKey: TKey }[] = [
-  { key: "thisMonth",   labelKey: "thisMonth" },
-  { key: "lastMonth",   labelKey: "lastMonth" },
-  { key: "last3Months", labelKey: "last3Months" },
-  { key: "last6Months", labelKey: "last6Months" },
-  { key: "thisYear",    labelKey: "thisYear" },
-  { key: "allTime",     labelKey: "allTime" },
-];
+/** Build month labels from JS Intl so we get localised names for free */
+function getMonthLabels(lang: string): { month: number; label: string }[] {
+  const locale = lang === "ar" ? "ar-SA" : "en-US";
+  return Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    label: new Date(2026, i, 1).toLocaleDateString(locale, { month: "long" }),
+  }));
+}
 
 const CATEGORY_ICONS: Record<string, string> = {
   water: "💧", electricity: "⚡", maintenance: "🔧", cleaning: "🧹", other: "📋",
@@ -43,35 +44,17 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 /* ── date range helper ── */
-function getDateRange(period: TimePeriod, earliestDate?: string) {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  let start: Date;
-  let end = new Date(y, m + 1, 0);
-
-  switch (period) {
-    case "thisMonth":   start = new Date(y, m, 1); break;
-    case "lastMonth":   start = new Date(y, m - 1, 1); end = new Date(y, m, 0); break;
-    case "last3Months": start = new Date(y, m - 2, 1); break;
-    case "last6Months": start = new Date(y, m - 5, 1); break;
-    case "thisYear":    start = new Date(y, 0, 1); break;
-    case "allTime":
-      start = earliestDate ? new Date(earliestDate + "T00:00:00") : new Date(y, 0, 1);
-      break;
-  }
-
-  const monthYears: string[] = [];
-  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-  while (cursor <= end) {
-    monthYears.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
-    cursor.setMonth(cursor.getMonth() + 1);
-  }
+function getDateRange(monthIndex: MonthFilter) {
+  const y = new Date().getFullYear();
+  const m = monthIndex - 1; // 0-based
+  const start = new Date(y, m, 1);
+  const end = new Date(y, m + 1, 0);
+  const monthYear = `${y}-${String(monthIndex).padStart(2, "0")}`;
 
   return {
-    startDate: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`,
-    endDate: `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`,
-    monthYears,
+    startDate: `${y}-${String(monthIndex).padStart(2, "0")}-01`,
+    endDate: `${y}-${String(monthIndex).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`,
+    monthYears: [monthYear],
   };
 }
 
@@ -115,7 +98,7 @@ export default function PerformanceScreen() {
   const S = useMemo(() => styles(C, shadow), [C, shadow]);
 
   const [activeTab, setActiveTab] = useState<MetricTab>((tab as MetricTab) || "revenue");
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("thisMonth");
+  const [selectedMonth, setSelectedMonth] = useState<MonthFilter>(new Date().getMonth() + 1);
   const [propertyFilter, setPropertyFilter] = useState("all");
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,27 +107,11 @@ export default function PerformanceScreen() {
   const [payments, setPayments] = useState<any[]>([]);
   const [expensesData, setExpensesData] = useState<any[]>([]);
   const [overdueTenants, setOverdueTenants] = useState<any[]>([]);
-  const [earliestLeaseDate, setEarliestLeaseDate] = useState<string | undefined>();
-
-  useEffect(() => { fetchData(); }, [activeTab, timePeriod, propertyFilter]);
+  useEffect(() => { fetchData(); }, [activeTab, selectedMonth, propertyFilter]);
 
   async function fetchData() {
     setLoading(true);
-    // For "allTime", first find earliest lease date
-    let earliest = earliestLeaseDate;
-    if (timePeriod === "allTime" && !earliest) {
-      const { data: earlyTenant } = await supabase
-        .from("tenants")
-        .select("lease_start")
-        .not("lease_start", "is", null)
-        .order("lease_start", { ascending: true })
-        .limit(1);
-      if (earlyTenant?.[0]?.lease_start) {
-        earliest = earlyTenant[0].lease_start;
-        setEarliestLeaseDate(earliest);
-      }
-    }
-    const { startDate, endDate, monthYears } = getDateRange(timePeriod, earliest);
+    const { startDate, endDate, monthYears } = getDateRange(selectedMonth);
 
     let propsQ = supabase.from("properties").select("id, name");
     let tenantsQ = supabase.from("tenants")
@@ -207,7 +174,7 @@ export default function PerformanceScreen() {
   }
 
   /* ── computed values ── */
-  const { monthYears } = getDateRange(timePeriod, earliestLeaseDate);
+  const { monthYears } = getDateRange(selectedMonth);
 
   const totalRevenue = useMemo(() =>
     activeTenants.reduce((s, tn) => s + calcTenantRevenue(tn, monthYears), 0),
@@ -576,17 +543,17 @@ export default function PerformanceScreen() {
         </View>
       </ScrollView>
 
-      {/* Time period pills */}
+      {/* Month filter pills */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: 8 }}
         style={{ flexGrow: 0, flexShrink: 0 }}>
         <View style={[S.pillRow, isRTL && S.rowRev]}>
-          {TIME_PERIODS.map((tp) => (
-            <TouchableOpacity key={tp.key}
-              style={[S.filterTab, timePeriod === tp.key && S.filterTabActive]}
-              onPress={() => setTimePeriod(tp.key)}>
-              <Text style={[S.filterTabText, timePeriod === tp.key && S.filterTabTextActive]}>
-                {t(tp.labelKey)}
+          {getMonthLabels(isRTL ? "ar" : "en").map((ml) => (
+            <TouchableOpacity key={ml.month}
+              style={[S.filterTab, selectedMonth === ml.month && S.filterTabActive]}
+              onPress={() => setSelectedMonth(ml.month)}>
+              <Text style={[S.filterTabText, selectedMonth === ml.month && S.filterTabTextActive]}>
+                {ml.label}
               </Text>
             </TouchableOpacity>
           ))}
