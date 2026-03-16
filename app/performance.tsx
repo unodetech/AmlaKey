@@ -7,6 +7,7 @@ import { crossAlert } from "../lib/alert";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { useLanguage, TKey } from "../context/LanguageContext";
+import { isPaymentDueInMonth } from "../lib/dateUtils";
 import { useTheme } from "../context/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, radii } from "../constants/theme";
@@ -58,34 +59,18 @@ function getDateRange(monthIndex: MonthFilter) {
   };
 }
 
-/** How many payment periods fall within a range of months for a given frequency */
-function getFrequencyMultiplier(freq: string): number {
-  switch (freq) {
-    case "annual": return 12;
-    case "semi_annual": return 6;
-    case "quarterly": return 3;
-    default: return 1; // monthly
-  }
+/** Amount due from a tenant in a given month — matches dashboard logic */
+function amountDueInMonth(tn: any, monthStr: string): number {
+  if (!tn.lease_start || !tn.monthly_rent) return 0;
+  if (!isPaymentDueInMonth(tn.lease_start, tn.lease_end, tn.payment_frequency, monthStr)) return 0;
+  const rent = tn.monthly_rent ?? 0;
+  if (tn.payment_frequency === "semi_annual") return rent / 2;
+  return rent;
 }
 
-/** Calculate expected revenue for a tenant within a date range, respecting lease dates and payment frequency */
+/** Calculate expected revenue for a tenant across given months */
 function calcTenantRevenue(tn: any, monthYears: string[]): number {
-  if (!tn.lease_start || !tn.monthly_rent) return 0;
-  const freq = tn.payment_frequency || "monthly";
-  const freqMonths = getFrequencyMultiplier(freq);
-  const leaseStart = tn.lease_start.slice(0, 7); // YYYY-MM
-  const leaseEnd = tn.lease_end ? tn.lease_end.slice(0, 7) : "9999-12";
-
-  // Count how many months in the range overlap with the lease period
-  let activeMonths = 0;
-  for (const my of monthYears) {
-    if (my >= leaseStart && my <= leaseEnd) activeMonths++;
-  }
-
-  // monthly_rent is the amount per payment period
-  // e.g., if annual and monthly_rent=9000, that's 9000/year = 9000/12 per month
-  const monthlyAmount = tn.monthly_rent / freqMonths;
-  return monthlyAmount * activeMonths;
+  return monthYears.reduce((s, my) => s + amountDueInMonth(tn, my), 0);
 }
 
 /* ── component ── */
@@ -156,14 +141,17 @@ export default function PerformanceScreen() {
       const list = (tenants ?? [])
         .filter((tn: any) => {
           if (!tn.lease_start) return false;
+          if (!isPaymentDueInMonth(tn.lease_start, tn.lease_end, tn.payment_frequency, thisMonth)) return false;
           const dueDay = new Date(tn.lease_start + "T12:00:00").getDate();
           const totalPaid = paidByTenantMap.get(tn.id) ?? 0;
-          return currentDay >= dueDay && totalPaid < (tn.monthly_rent ?? 0);
+          const dueAmount = amountDueInMonth(tn, thisMonth);
+          return currentDay >= dueDay && totalPaid < dueAmount;
         })
         .map((tn: any) => {
           const dueDay = new Date(tn.lease_start + "T12:00:00").getDate();
           const totalPaid = paidByTenantMap.get(tn.id) ?? 0;
-          const overdueAmount = (tn.monthly_rent ?? 0) - totalPaid;
+          const dueAmount = amountDueInMonth(tn, thisMonth);
+          const overdueAmount = dueAmount - totalPaid;
           return { ...tn, dueDay, daysOverdue: currentDay - dueDay, overdueAmount };
         })
         .sort((a: any, b: any) => b.daysOverdue - a.daysOverdue);
