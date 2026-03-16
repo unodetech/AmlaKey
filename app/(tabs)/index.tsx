@@ -169,25 +169,39 @@ export default function DashboardScreen() {
         .order("created_at", { ascending: false }).limit(3),
     ]);
 
-    // Filter tenants to only those whose payment is due this month (respects frequency)
-    const currentMonthTenants = (activeTenants ?? []).filter((tn: any) =>
+    // Tenants whose lease covers the current month (for occupancy/counts)
+    const monthStart = new Date(`${thisMonth}-01T00:00:00`);
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+    const leaseActiveTenants = (activeTenants ?? []).filter((tn: any) => {
+      if (!tn.lease_start) return false;
+      const ls = new Date(tn.lease_start + "T00:00:00");
+      if (ls > monthEnd) return false;
+      if (tn.lease_end) {
+        const le = new Date(tn.lease_end + "T23:59:59");
+        if (le < monthStart) return false;
+      }
+      return true;
+    });
+
+    // Tenants whose payment is actually due this month (for revenue/overdue)
+    const paymentDueTenants = leaseActiveTenants.filter((tn: any) =>
       isPaymentDueInMonth(tn.lease_start, tn.lease_end, tn.payment_frequency, thisMonth)
     );
 
-    setRevenue(currentMonthTenants.reduce((s: number, tn: any) => s + (tn.monthly_rent ?? 0), 0));
+    setRevenue(paymentDueTenants.reduce((s: number, tn: any) => s + (tn.monthly_rent ?? 0), 0));
     setCollected(payData?.reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0);
     setExpenses(expData?.reduce((s, e) => s + (e.amount ?? 0), 0) ?? 0);
     const units = (props ?? []).reduce((s: number, p: any) => s + p.total_units, 0);
     setTotalUnits(units);
-    setOccupiedUnits(currentMonthTenants.length);
+    setOccupiedUnits(leaseActiveTenants.length);
     setTenantCounts({
       total: allTenants?.length ?? 0,
-      active: currentMonthTenants.length,
+      active: leaseActiveTenants.length,
       expired: allTenants?.filter((tn) => tn.status === "expired").length ?? 0,
     });
     setPropertyOccs((props ?? []).map((p: any) => ({
       id: p.id, name: p.name, total_units: p.total_units,
-      occupied: currentMonthTenants.filter((tn: any) => tn.property_id === p.id).length,
+      occupied: leaseActiveTenants.filter((tn: any) => tn.property_id === p.id).length,
     })));
 
     // Compute overdue tenants — only from tenants whose payment is due this month
@@ -198,7 +212,7 @@ export default function DashboardScreen() {
       paidByTenantMap.set(p.tenant_id, (paidByTenantMap.get(p.tenant_id) ?? 0) + (p.amount ?? 0));
     }
     const overdueList: OverdueTenant[] = [];
-    for (const tn of currentMonthTenants) {
+    for (const tn of paymentDueTenants) {
       if (!tn.lease_start) continue;
       const dueDay = new Date(tn.lease_start + "T12:00:00").getDate();
       const totalPaid = paidByTenantMap.get(tn.id) ?? 0;
