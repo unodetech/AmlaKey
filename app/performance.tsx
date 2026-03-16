@@ -147,7 +147,9 @@ export default function PerformanceScreen() {
         })
         .map((tn: any) => {
           const dueDay = new Date(tn.lease_start + "T12:00:00").getDate();
-          return { ...tn, dueDay, daysOverdue: currentDay - dueDay };
+          const totalPaid = paidByTenantMap.get(tn.id) ?? 0;
+          const overdueAmount = (tn.monthly_rent ?? 0) - totalPaid;
+          return { ...tn, dueDay, daysOverdue: currentDay - dueDay, overdueAmount };
         })
         .sort((a: any, b: any) => b.daysOverdue - a.daysOverdue);
       setOverdueTenants(list);
@@ -173,7 +175,7 @@ export default function PerformanceScreen() {
   const netIncome = totalCollected - totalExpenses;
   const collectionRate = totalRevenue > 0 ? Math.round((totalCollected / totalRevenue) * 100) : 0;
   const totalOverdue = useMemo(() =>
-    overdueTenants.reduce((s, ot) => s + (ot.monthly_rent ?? 0), 0), [overdueTenants]);
+    overdueTenants.reduce((s, ot) => s + (ot.overdueAmount ?? ot.monthly_rent ?? 0), 0), [overdueTenants]);
 
   const propertyBreakdown = useMemo(() =>
     properties.map((p) => {
@@ -398,7 +400,7 @@ export default function PerformanceScreen() {
                 </Text>
               </View>
               <View style={{ alignItems: isRTL ? "flex-start" : "flex-end" }}>
-                <Text style={S.overdueAmount}>{ot.monthly_rent?.toLocaleString()} {t("sar")}</Text>
+                <Text style={S.overdueAmount}>{(ot.overdueAmount ?? ot.monthly_rent)?.toLocaleString()} {t("sar")}</Text>
                 <Text style={S.overdueDays}>{ot.daysOverdue} {t("daysOverdue")}</Text>
               </View>
               <Text style={S.overdueChevron}>{isRTL ? "‹" : "›"}</Text>

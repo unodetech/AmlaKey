@@ -36,7 +36,7 @@ interface Update {
 interface OverdueTenant {
   id: string; name: string; unitNumber: string;
   propertyName: string; propertyId: string;
-  monthlyRent: number; dueDay: number; daysOverdue: number;
+  monthlyRent: number; overdueAmount: number; dueDay: number; daysOverdue: number;
 }
 
 interface BroadcastTenant {
@@ -205,6 +205,7 @@ export default function DashboardScreen() {
           propertyName: (tn as any).properties?.name ?? "",
           propertyId: tn.property_id,
           monthlyRent: tn.monthly_rent,
+          overdueAmount: tn.monthly_rent - totalPaid,
           dueDay,
           daysOverdue,
         });
@@ -248,7 +249,7 @@ export default function DashboardScreen() {
       return {
       id: `o-${ot.id}`, icon: "⚠️", title: ot.name,
       sub: `${t("overdue")} - ${t("unit")} ${ot.unitNumber}, ${ot.propertyName}`,
-      amount: ot.monthlyRent, time: dueDate.toISOString(), color: "#F59E0B",
+      amount: ot.overdueAmount, time: dueDate.toISOString(), color: "#F59E0B",
       detail: `${ot.daysOverdue} ${t("daysOverdue")}`,
       propertyName: ot.propertyName,
       unitNumber: ot.unitNumber,
@@ -347,7 +348,7 @@ export default function DashboardScreen() {
   const netIncome = collected - expenses;
   const occupancyPct = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
   const collectionPct = revenue > 0 ? Math.round((collected / revenue) * 100) : 0;
-  const totalOverdue = overdueTenants.reduce((s, ot) => s + ot.monthlyRent, 0);
+  const totalOverdue = overdueTenants.reduce((s, ot) => s + ot.overdueAmount, 0);
 
   const handleOccPropertyPress = (p: PropertyOcc) => {
     setOccModal(false);
