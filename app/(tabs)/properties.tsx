@@ -24,7 +24,7 @@ import { userKey, PERSONAL_INFO_KEY } from "../../lib/storage";
 import { spacing, radii } from "../../constants/theme";
 import { useSubscription, FREE_LIMITS } from "../../context/SubscriptionContext";
 import WebContainer, { useResponsive } from "../../components/WebContainer";
-import { modalBackdropStyle } from "../../components/WebDateInput";
+import { modalBackdropStyle, ModalOverlay, webContentClickStop } from "../../components/WebDateInput";
 
 type PropertyType = "apartment" | "villa" | "commercial" | "shop";
 const CITIES = ["alkharj", "riyadh", "jeddah", "dammam"];
@@ -302,11 +302,17 @@ export default function PropertiesScreen() {
   const totalUnits = properties.reduce((s, p) => s + p.total_units, 0);
   const totalIncome = properties.reduce((s, p) => s + p.monthly_income, 0);
 
-  const Wrapper = isWeb ? View : TouchableWithoutFeedback;
-  const wrapperProps = isWeb ? { style: { flex: 1 } } : { onPress: Keyboard.dismiss, accessible: false };
-
+  if (isWeb) {
+    return renderContent();
+  }
   return (
-    <Wrapper {...wrapperProps}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      {renderContent()}
+    </TouchableWithoutFeedback>
+  );
+
+  function renderContent() {
+  return (
       <View style={S.container}>
         <WebContainer maxWidth={1200}>
         <View style={[S.header, { paddingTop: insets.top + 10 }, isRTL && S.rowRev]}>
@@ -433,9 +439,8 @@ export default function PropertiesScreen() {
 
         {/* ── Add Modal ── */}
         <Modal visible={addVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setAddVisible(false)}>
-          <View style={S.modalOverlay}>
-            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setAddVisible(false); }} />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%", ...(Platform.OS === 'web' ? { zIndex: 1, position: 'relative' as any } : {}) }}>
+          <ModalOverlay style={S.modalOverlay} onDismiss={() => setAddVisible(false)}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }} {...webContentClickStop}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={true}>
                 <View style={S.modalBox}>
                   <Text style={S.modalTitle}>{t("addProperty")}</Text>
@@ -544,14 +549,13 @@ export default function PropertiesScreen() {
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
-          </View>
+          </ModalOverlay>
         </Modal>
 
         {/* ── Edit Modal ── */}
         <Modal visible={editVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setEditVisible(false)}>
-          <View style={S.modalOverlay}>
-            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setEditVisible(false); }} />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%", ...(Platform.OS === 'web' ? { zIndex: 1, position: 'relative' as any } : {}) }}>
+          <ModalOverlay style={S.modalOverlay} onDismiss={() => setEditVisible(false)}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }} {...webContentClickStop}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={true}>
                 <View style={S.modalBox}>
                   <Text style={S.modalTitle}>{t("edit") ?? "Edit Property"}</Text>
@@ -660,11 +664,11 @@ export default function PropertiesScreen() {
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
-          </View>
+          </ModalOverlay>
         </Modal>
       </View>
-    </Wrapper>
   );
+  }
 }
 
 const styles = (C: any, shadow: any) => StyleSheet.create({

@@ -28,7 +28,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, radii } from "../../constants/theme";
 import { userKey, EJAR_IMPORT_KEY } from "../../lib/storage";
 import WebContainer from "../../components/WebContainer";
-import { WebDateInput, modalBackdropStyle } from "../../components/WebDateInput";
+import { WebDateInput, modalBackdropStyle, ModalOverlay, webContentClickStop } from "../../components/WebDateInput";
 
 const isWeb = Platform.OS === "web";
 
@@ -517,11 +517,17 @@ true;
   const filtered = filter === "all" ? tenants : tenants.filter((t) => t.status === filter);
   const activeCount = tenants.filter((t) => t.status === "active").length;
 
-  const Wrapper = isWeb ? View : TouchableWithoutFeedback;
-  const wrapperProps = isWeb ? { style: { flex: 1 } } : { onPress: dismissAll, accessible: false };
-
+  if (isWeb) {
+    return renderContent();
+  }
   return (
-    <Wrapper {...wrapperProps}>
+    <TouchableWithoutFeedback onPress={dismissAll} accessible={false}>
+      {renderContent()}
+    </TouchableWithoutFeedback>
+  );
+
+  function renderContent() {
+  return (
       <View style={S.container}>
         <WebContainer maxWidth={1000}>
         <View style={[S.header, { paddingTop: insets.top + 10 }, isRTL && S.rowRev]}>
@@ -671,9 +677,8 @@ true;
 
         {/* Add Choice Modal — Manual vs Ejar */}
         <Modal visible={addChoiceVisible} animationType="fade" transparent onRequestClose={() => setAddChoiceVisible(false)}>
-          <View style={S.modalOverlay}>
-            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => setAddChoiceVisible(false)} />
-              <View style={S.choiceBox}>
+          <ModalOverlay style={S.modalOverlay} onDismiss={() => setAddChoiceVisible(false)}>
+              <View style={S.choiceBox} {...webContentClickStop}>
                 <Text style={S.choiceTitle}>{t("addTenant")}</Text>
                 <TouchableOpacity
                   style={S.choiceOption}
@@ -716,14 +721,13 @@ true;
                   <Text style={[S.choiceArrow, { color: "#25935f" }]}>{isRTL ? "‹" : "›"}</Text>
                 </TouchableOpacity>
               </View>
-          </View>
+          </ModalOverlay>
         </Modal>
 
         {/* Add Tenant Modal */}
         <Modal visible={modalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setModalVisible(false)}>
-          <View style={S.modalOverlay}>
-            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setModalVisible(false); }} />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%", ...(Platform.OS === 'web' ? { zIndex: 1 } : {}) }}>
+          <ModalOverlay style={S.modalOverlay} onDismiss={() => { dismissAll(); setModalVisible(false); }}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }} {...webContentClickStop}>
               <ScrollView ref={addTenantScrollRef} keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View style={S.modalBox}>
                   <Text style={S.modalTitle}>{t("addTenant")}</Text>
@@ -902,14 +906,13 @@ true;
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
-          </View>
+          </ModalOverlay>
         </Modal>
 
         {/* Collect Payment Modal */}
         <Modal visible={payModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setPayModalVisible(false)}>
-          <View style={S.modalOverlay}>
-            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setPayModalVisible(false); }} />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={Platform.OS === 'web' ? { zIndex: 1 } : undefined}>
+          <ModalOverlay style={S.modalOverlay} onDismiss={() => { dismissAll(); setPayModalVisible(false); }}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} {...webContentClickStop}>
               <View style={S.modalBox}>
                 <Text style={S.modalTitle}>💰 {t("markAsPaid") ?? "Collect Payment"}</Text>
                 {payTenant && (
@@ -978,14 +981,13 @@ true;
                 </View>
               </View>
             </KeyboardAvoidingView>
-          </View>
+          </ModalOverlay>
         </Modal>
 
         {/* Edit Tenant Modal */}
         <Modal visible={editModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setEditModalVisible(false)}>
-          <View style={S.modalOverlay}>
-            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setEditModalVisible(false); }} />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%", ...(Platform.OS === 'web' ? { zIndex: 1 } : {}) }}>
+          <ModalOverlay style={S.modalOverlay} onDismiss={() => { dismissAll(); setEditModalVisible(false); }}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }} {...webContentClickStop}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View style={S.modalBox}>
                   <Text style={S.modalTitle}>{t("edit") ?? "Edit"} {editTenant?.name}</Text>
@@ -1134,7 +1136,7 @@ true;
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
-          </View>
+          </ModalOverlay>
         </Modal>
 
         {/* Hidden WebView for Ejar background sync */}
@@ -1161,8 +1163,8 @@ true;
           />
         )}
       </View>
-    </Wrapper>
   );
+  }
 }
 
 const styles = (C: any, shadow: any) => StyleSheet.create({

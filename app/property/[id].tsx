@@ -17,7 +17,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, radii } from "../../constants/theme";
-import { WebDateInput, modalBackdropStyle } from "../../components/WebDateInput";
+import { WebDateInput, modalBackdropStyle, ModalOverlay, webContentClickStop } from "../../components/WebDateInput";
 
 type TenantMap = Record<string, { id: string; name: string; status: string; monthly_rent: number }>;
 type LabelMap = Record<string, string>;
@@ -550,9 +550,8 @@ export default function PropertyUnitsScreen() {
 
       {/* ── Bulk Payment Modal ── */}
       <Modal visible={bulkPayModal} animationType={isWeb ? "fade" : "slide"} transparent onRequestClose={() => setBulkPayModal(false)}>
-        <View style={S.editModalOverlay}>
-          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => setBulkPayModal(false)} />
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ ...(Platform.OS === 'web' ? { zIndex: 1, position: 'relative' as any } : {}) }}>
+        <ModalOverlay style={S.editModalOverlay} onDismiss={() => setBulkPayModal(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} {...webContentClickStop}>
             <ScrollView bounces={false} keyboardShouldPersistTaps="handled" style={{ maxHeight: "100%" }}>
             <View style={S.editModalBox}>
               <Text style={S.modalTitle}>{t("collectPaymentTitle")}</Text>
@@ -637,14 +636,14 @@ export default function PropertyUnitsScreen() {
             </View>
             </ScrollView>
           </KeyboardAvoidingView>
-        </View>
+        </ModalOverlay>
       </Modal>
 
       {/* ── Edit Label Modal ── */}
       <Modal visible={editUnit !== null} animationType="fade" transparent onRequestClose={() => setEditUnit(null)}>
-        <KeyboardAvoidingView style={S.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setEditUnit(null); }} />
-          <View style={[S.modalBox, ...(Platform.OS === 'web' ? [{ zIndex: 1, position: 'relative' as any }] : [])]}>
+        <ModalOverlay style={S.modalOverlay} onDismiss={() => setEditUnit(null)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} {...webContentClickStop}>
+          <View style={S.modalBox}>
             <Text style={S.modalTitle}>{t("unit")} {editUnit} — {t("editLabel")}</Text>
             <TextInput
               style={S.labelInput}
@@ -670,14 +669,14 @@ export default function PropertyUnitsScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </ModalOverlay>
       </Modal>
 
       {/* ── Edit Property Modal ── */}
       <Modal visible={editModal} animationType={isWeb ? "fade" : "slide"} transparent onRequestClose={() => setEditModal(false)}>
-        <View style={S.editModalOverlay}>
-          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setEditModal(false); }} />
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%", ...(Platform.OS === 'web' ? { zIndex: 1, position: 'relative' as any } : {}) }}>
+        <ModalOverlay style={S.editModalOverlay} onDismiss={() => { dismissAll(); setEditModal(false); }}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }} {...webContentClickStop}>
             <ScrollView keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={true}>
               <View style={S.editModalBox}>
                 <Text style={S.modalTitle}>{t("editProperty")}</Text>
@@ -804,7 +803,7 @@ export default function PropertyUnitsScreen() {
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
-        </View>
+        </ModalOverlay>
       </Modal>
     </View>
   );

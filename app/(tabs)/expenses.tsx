@@ -32,7 +32,7 @@ import { userKey, HIJRI_KEY } from "../../lib/storage";
 import { SwipeableRow, SwipeableRowRef } from "../../components/SwipeableRow";
 import { suggestCategory } from "../../lib/expenseCategorizer";
 import WebContainer, { useResponsive } from "../../components/WebContainer";
-import { WebDateInput, modalBackdropStyle } from "../../components/WebDateInput";
+import { WebDateInput, modalBackdropStyle, ModalOverlay, webContentClickStop } from "../../components/WebDateInput";
 
 type Category = "water" | "electricity" | "maintenance" | "cleaning" | "management" | "other" | "insurance" | "taxes";
 
@@ -1025,9 +1025,8 @@ export default function ExpensesScreen() {
 
         {/* Add Modal */}
         <Modal visible={modalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setModalVisible(false)}>
-          <View style={S.modalOverlay}>
-            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setModalVisible(false); }} />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%", ...(Platform.OS === 'web' ? { zIndex: 1, position: 'relative' as any } : {}) }}>
+          <ModalOverlay style={S.modalOverlay} onDismiss={() => { Keyboard.dismiss(); setModalVisible(false); }}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }} {...webContentClickStop}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View style={S.modalBox}>
                   <Text style={S.modalTitle}>{t("addExpense")}</Text>
@@ -1277,14 +1276,13 @@ export default function ExpensesScreen() {
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
-          </View>
+          </ModalOverlay>
         </Modal>
 
         {/* Integration Modal */}
         <Modal visible={integrationModal} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setIntegrationModal(false)}>
-          <View style={S.modalOverlay}>
-            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { setIntegrationModal(false); fetchAll(); }} />
-              <View style={[S.modalBox, { maxHeight: "75%" }]}>
+          <ModalOverlay style={S.modalOverlay} onDismiss={() => { setIntegrationModal(false); fetchAll(); }}>
+              <View style={[S.modalBox, { maxHeight: "75%" }]} {...webContentClickStop}>
                 {/* Header */}
                 <View style={[S.integrationHeader, isRTL && S.rowRev]}>
                   <Text style={[S.modalTitle, { marginBottom: 0, textAlign: isRTL ? "right" : "left" }]}>
@@ -1380,14 +1378,13 @@ export default function ExpensesScreen() {
                   </>
                 )}
               </View>
-          </View>
+          </ModalOverlay>
         </Modal>
 
         {/* Edit Modal */}
         <Modal visible={editModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setEditModalVisible(false)}>
-          <View style={S.modalOverlay}>
-            <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { Keyboard.dismiss(); setEditModalVisible(false); }} />
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%", ...(Platform.OS === 'web' ? { zIndex: 1, position: 'relative' as any } : {}) }}>
+          <ModalOverlay style={S.modalOverlay} onDismiss={() => { Keyboard.dismiss(); setEditModalVisible(false); }}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }} {...webContentClickStop}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View style={S.modalBox}>
                   <Text style={S.modalTitle}>{t("editExpense")}</Text>
@@ -1530,7 +1527,7 @@ export default function ExpensesScreen() {
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
-          </View>
+          </ModalOverlay>
         </Modal>
 
       </View>

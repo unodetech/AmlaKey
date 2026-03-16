@@ -28,7 +28,7 @@ import { formatDualDate } from "../lib/dateUtils";
 import { generateAndShareReceipt, ReceiptData } from "../lib/receiptGenerator";
 import { userKey, HIJRI_KEY, EJAR_IMPORT_KEY } from "../lib/storage";
 import WebContainer from "../components/WebContainer";
-import { WebDateInput, modalBackdropStyle } from "../components/WebDateInput";
+import { WebDateInput, modalBackdropStyle, ModalOverlay, webContentClickStop } from "../components/WebDateInput";
 
 const isWeb = Platform.OS === "web";
 
@@ -925,11 +925,11 @@ export default function UnitDetailScreen() {
         transparent
         onRequestClose={() => setEditPayModal(false)}
       >
-        <View style={S.modalOverlay}>
-          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setEditPayModal(false); }} />
+        <ModalOverlay style={S.modalOverlay} onDismiss={() => { dismissAll(); setEditPayModal(false); }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={[S.modalSheet, ...(Platform.OS === 'web' ? [{ zIndex: 1, position: 'relative' as any }] : [])]}
+            style={[S.modalSheet, { maxHeight: "90%" }]}
+            {...webContentClickStop}
           >
             <Text style={S.modalTitle}>
               ✏️ {t("editPayment")}
@@ -1005,7 +1005,7 @@ export default function UnitDetailScreen() {
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
-        </View>
+        </ModalOverlay>
       </Modal>
 
       {/* ── Renew Lease Modal ── */}
@@ -1015,11 +1015,11 @@ export default function UnitDetailScreen() {
         transparent
         onRequestClose={() => setShowRenewModal(false)}
       >
-        <View style={S.modalOverlay}>
-          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setShowRenewModal(false); }} />
+        <ModalOverlay style={S.modalOverlay} onDismiss={() => { dismissAll(); setShowRenewModal(false); }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={[S.modalSheet, ...(Platform.OS === 'web' ? [{ zIndex: 1, position: 'relative' as any }] : [])]}
+            style={[S.modalSheet, { maxHeight: "90%" }]}
+            {...webContentClickStop}
           >
             <Text style={S.modalTitle}>{t("renewLease")}</Text>
             <Text style={{ fontSize: 13, color: C.textMuted, marginBottom: 16, textAlign: isRTL ? "right" : "left" }}>
@@ -1095,14 +1095,13 @@ export default function UnitDetailScreen() {
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
-        </View>
+        </ModalOverlay>
       </Modal>
 
       {/* ── Add Choice Modal — Manual vs Ejar ── */}
       <Modal visible={addChoiceVisible} animationType="fade" transparent onRequestClose={() => setAddChoiceVisible(false)}>
-        <View style={S.modalOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setAddChoiceVisible(false)} />
-            <View style={[S.choiceBox, ...(Platform.OS === 'web' ? [{ zIndex: 1, position: 'relative' as any }] : [])]}>
+        <ModalOverlay style={S.modalOverlay} onDismiss={() => setAddChoiceVisible(false)}>
+            <View style={S.choiceBox} {...webContentClickStop}>
               <Text style={S.choiceTitle}>{t("addTenantToUnit")}</Text>
               <TouchableOpacity
                 style={S.choiceOption}
@@ -1141,7 +1140,7 @@ export default function UnitDetailScreen() {
                 <Text style={[S.choiceArrow, { color: "#25935f" }]}>{isRTL ? "‹" : "›"}</Text>
               </TouchableOpacity>
             </View>
-        </View>
+        </ModalOverlay>
       </Modal>
 
       {/* ── Add Tenant Modal ── */}
@@ -1151,11 +1150,11 @@ export default function UnitDetailScreen() {
         transparent
         onRequestClose={() => setShowAddModal(false)}
       >
-        <View style={S.modalOverlay}>
-          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setShowAddModal(false); }} />
+        <ModalOverlay style={S.modalOverlay} onDismiss={() => { dismissAll(); setShowAddModal(false); }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={[S.modalSheet, ...(Platform.OS === 'web' ? [{ zIndex: 1, position: 'relative' as any }] : [])]}
+            style={[S.modalSheet, { maxHeight: "90%" }]}
+            {...webContentClickStop}
           >
             <ScrollView
               ref={addTenantScrollRef}
@@ -1335,7 +1334,7 @@ export default function UnitDetailScreen() {
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
-        </View>
+        </ModalOverlay>
       </Modal>
 
       {/* ── Collect Payment Modal ── */}
@@ -1345,11 +1344,11 @@ export default function UnitDetailScreen() {
         transparent
         onRequestClose={() => setShowPayModal(false)}
       >
-        <View style={S.modalOverlay}>
-          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setShowPayModal(false); }} />
+        <ModalOverlay style={S.modalOverlay} onDismiss={() => { dismissAll(); setShowPayModal(false); }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={[S.modalSheet, ...(Platform.OS === 'web' ? [{ zIndex: 1, position: 'relative' as any }] : [])]}
+            style={[S.modalSheet, { maxHeight: "90%" }]}
+            {...webContentClickStop}
           >
             <Text style={S.modalTitle}>
               {t("collectPayment")}
@@ -1436,7 +1435,7 @@ export default function UnitDetailScreen() {
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
-        </View>
+        </ModalOverlay>
       </Modal>
 
       {/* ── Edit Tenant Modal ── */}
@@ -1446,11 +1445,11 @@ export default function UnitDetailScreen() {
         transparent
         onRequestClose={() => setShowEditTenantModal(false)}
       >
-        <View style={S.modalOverlay}>
-          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { dismissAll(); setShowEditTenantModal(false); }} />
+        <ModalOverlay style={S.modalOverlay} onDismiss={() => { dismissAll(); setShowEditTenantModal(false); }}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={[S.modalSheet, ...(Platform.OS === 'web' ? [{ zIndex: 1, position: 'relative' as any }] : [])]}
+            style={[S.modalSheet, { maxHeight: "90%" }]}
+            {...webContentClickStop}
           >
             <ScrollView
               showsVerticalScrollIndicator={false}
@@ -1623,7 +1622,7 @@ export default function UnitDetailScreen() {
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
-        </View>
+        </ModalOverlay>
       </Modal>
     </View>
   );

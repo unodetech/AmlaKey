@@ -19,7 +19,7 @@ import { formatDualDate, formatMonthDual } from "../../lib/dateUtils";
 import { useAuth } from "../../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import WebContainer, { useResponsive } from "../../components/WebContainer";
-import { modalBackdropStyle } from "../../components/WebDateInput";
+import { modalBackdropStyle, ModalOverlay, webContentClickStop } from "../../components/WebDateInput";
 import { useSubscription } from "../../context/SubscriptionContext";
 import { userKey, PERSONAL_INFO_KEY, HIJRI_KEY } from "../../lib/storage";
 
@@ -621,9 +621,8 @@ export default function DashboardScreen() {
 
       {/* Occupancy Modal — each property clickable */}
       <Modal visible={occModal} transparent animationType={Platform.OS === 'web' ? 'fade' : 'slide'} onRequestClose={() => setOccModal(false)}>
-        <View style={S.modalOverlay}>
-          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => setOccModal(false)} />
-          <View style={[S.modalBox, { maxHeight: "70%" }]}>
+        <ModalOverlay style={S.modalOverlay} onDismiss={() => setOccModal(false)}>
+          <View style={[S.modalBox, { maxHeight: "70%" }]} {...webContentClickStop}>
             <View style={[S.modalHeader, isRTL && S.rowRev]}>
               <Text style={S.modalTitle}>{t("occupancyDetails")}</Text>
               <TouchableOpacity onPress={() => setOccModal(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
@@ -662,14 +661,13 @@ export default function DashboardScreen() {
               <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>{t("close")}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ModalOverlay>
       </Modal>
 
       {/* ── Calendar Modal ── */}
       <Modal visible={calendarModal} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setCalendarModal(false)}>
-        <View style={S.modalOverlay}>
-          <TouchableOpacity style={modalBackdropStyle} activeOpacity={1} onPress={() => { setCalendarModal(false); setSelectedCalDate(null); }} />
-          <View style={[S.modalBox, { maxHeight: "80%" }]}>
+        <ModalOverlay style={S.modalOverlay} onDismiss={() => { setCalendarModal(false); setSelectedCalDate(null); }}>
+          <View style={[S.modalBox, { maxHeight: "80%" }]} {...webContentClickStop}>
             {/* Month nav + Today */}
             <View style={[S.calHeader, isRTL && S.rowRev]}>
               <TouchableOpacity onPress={() => { setCalendarDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1)); setSelectedCalDate(null); }} style={S.calNavBtn}>
@@ -782,7 +780,7 @@ export default function DashboardScreen() {
               <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>{t("close")}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ModalOverlay>
       </Modal>
 
       {/* ── Broadcast Message Modal ── */}

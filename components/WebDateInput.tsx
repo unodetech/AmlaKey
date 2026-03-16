@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, TouchableOpacity, Text, View, StyleSheet } from "react-native";
+import { Platform, TouchableOpacity, Text, View, StyleSheet, Keyboard } from "react-native";
 
 /**
  * Web-compatible date input.
@@ -83,3 +83,47 @@ export function WebDateInput({
 export const modalBackdropStyle = Platform.OS === "web"
   ? { ...StyleSheet.absoluteFillObject, zIndex: 0 } as any
   : { flex: 1 };
+
+const isWeb = Platform.OS === "web";
+
+/**
+ * Web-safe modal overlay that replaces the backdrop TouchableOpacity pattern.
+ * On web: Uses DOM onClick on the overlay for dismiss, no backdrop element needed.
+ *         This avoids React Native Web's responder system intercepting clicks on inputs.
+ * On native: Uses the classic TouchableOpacity backdrop with absoluteFillObject.
+ */
+export function ModalOverlay({
+  onDismiss,
+  style,
+  children,
+}: {
+  onDismiss: () => void;
+  style?: any;
+  children: React.ReactNode;
+}) {
+  if (isWeb) {
+    return (
+      <View style={style} {...{ onClick: onDismiss } as any}>
+        {children}
+      </View>
+    );
+  }
+  return (
+    <View style={style}>
+      <TouchableOpacity
+        style={{ ...StyleSheet.absoluteFillObject }}
+        activeOpacity={1}
+        onPress={() => { Keyboard.dismiss(); onDismiss(); }}
+      />
+      {children}
+    </View>
+  );
+}
+
+/**
+ * Props to spread on modal content wrappers on web to stop click propagation
+ * (prevents dismiss when clicking inside the modal content).
+ */
+export const webContentClickStop = isWeb
+  ? { onClick: (e: any) => e.stopPropagation() } as any
+  : {};
