@@ -3,9 +3,13 @@ import {
   ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
 // expo-location: use native module on mobile, browser API on web
 const isWeb = Platform.OS === "web";
+// DateTimePicker only available on native
+let DateTimePicker: any = null;
+if (!isWeb) {
+  DateTimePicker = require("@react-native-community/datetimepicker").default;
+}
 let Location: typeof import("expo-location") | null = null;
 if (!isWeb) {
   Location = require("expo-location");
@@ -607,7 +611,7 @@ export default function PropertyUnitsScreen() {
                         display="spinner"
                         locale="en-US"
                         themeVariant={isDark ? "dark" : "light"}
-                        onChange={(_, date) => {
+                        onChange={(_: any, date: any) => {
                           if (date) {
                             setBulkPayDateObj(date);
                             setBulkPayDate(date.toISOString().split("T")[0]);

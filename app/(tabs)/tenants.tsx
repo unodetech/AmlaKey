@@ -143,7 +143,7 @@ export default function TenantsScreen() {
   const [ejarSyncQueue, setEjarSyncQueue] = useState<Tenant[]>([]);
   const ejarSyncing = useRef(false);
   const hasSyncedEjar = useRef(false);
-  const ejarWebViewRef = useRef<WebView>(null);
+  const ejarWebViewRef = useRef<any>(null);
 
   // Swipeable gesture refs — track open rows so we can auto-close them
   const swipeRefs = useRef<Map<string, SwipeableRowRef | null>>(new Map());

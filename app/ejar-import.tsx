@@ -194,7 +194,7 @@ export default function EjarImportScreen() {
   const [contractData, setContractData] = useState<ContractData | null>(null);
   const [webViewUrl, setWebViewUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<any>(null);
   const extractAttemptRef = useRef(0);
   const stepRef = useRef<"idle" | "form_loaded" | "submitted" | "result_page" | "detail_page" | "done">("idle");
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import {
-  FlatList, I18nManager, Modal, SafeAreaView, StyleSheet,
+  FlatList, I18nManager, Modal, Platform, SafeAreaView, StyleSheet,
   Text, TouchableOpacity, View,
 } from "react-native";
 import { crossAlert } from "../lib/alert";
@@ -112,49 +112,65 @@ export function NotificationCenter({ visible, onClose }: Props) {
     return result;
   }, [sections]);
 
-  return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={S.container}>
-        {/* Header */}
-        <View style={[S.header, isRTL && { flexDirection: "row-reverse" }]}>
-          <Text style={S.headerTitle}>{t("notifications")}</Text>
-          <View style={[S.headerActions, isRTL && { flexDirection: "row-reverse" }]}>
-            {unreadCount > 0 && (
-              <TouchableOpacity onPress={markAllAsRead} style={S.headerBtn}>
-                <Text style={[S.headerBtnText, { color: C.primary }]}>{t("markAllRead")}</Text>
-              </TouchableOpacity>
-            )}
-            {notifications.length > 0 && (
-              <TouchableOpacity onPress={handleClear} style={S.headerBtn}>
-                <Text style={[S.headerBtnText, { color: "#EF4444" }]}>{t("clearAllNotifications")}</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity onPress={onClose} style={S.closeBtn}>
-              <Text style={S.closeBtnText}>✕</Text>
+  const listContent = (
+    <>
+      {/* Header */}
+      <View style={[S.header, isRTL && { flexDirection: "row-reverse" }]}>
+        <Text style={S.headerTitle}>{t("notifications")}</Text>
+        <View style={[S.headerActions, isRTL && { flexDirection: "row-reverse" }]}>
+          {unreadCount > 0 && (
+            <TouchableOpacity onPress={markAllAsRead} style={S.headerBtn}>
+              <Text style={[S.headerBtnText, { color: C.primary }]}>{t("markAllRead")}</Text>
             </TouchableOpacity>
-          </View>
+          )}
+          {notifications.length > 0 && (
+            <TouchableOpacity onPress={handleClear} style={S.headerBtn}>
+              <Text style={[S.headerBtnText, { color: "#EF4444" }]}>{t("clearAllNotifications")}</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={onClose} style={S.closeBtn}>
+            <Text style={S.closeBtnText}>✕</Text>
+          </TouchableOpacity>
         </View>
+      </View>
 
-        {/* List */}
-        {notifications.length === 0 ? (
-          <View style={S.empty}>
-            <Text style={S.emptyIcon}>🔔</Text>
-            <Text style={S.emptyText}>{t("noNotifications")}</Text>
+      {/* List */}
+      {notifications.length === 0 ? (
+        <View style={S.empty}>
+          <Text style={S.emptyIcon}>🔔</Text>
+          <Text style={S.emptyText}>{t("noNotifications")}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={flatData}
+          keyExtractor={(item, i) => ("_header" in item ? `h_${i}` : item.id)}
+          renderItem={({ item }) =>
+            "_header" in item
+              ? renderSectionHeader(item._header)
+              : renderItem({ item })
+          }
+          contentContainerStyle={S.list}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </>
+  );
+
+  return (
+    <Modal visible={visible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} presentationStyle={Platform.OS === 'web' ? undefined : 'pageSheet'} transparent={Platform.OS === 'web'} onRequestClose={onClose}>
+      {Platform.OS === 'web' ? (
+        <View style={S.webOverlay}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+          <View style={S.webModalBox}>
+            {listContent}
           </View>
-        ) : (
-          <FlatList
-            data={flatData}
-            keyExtractor={(item, i) => ("_header" in item ? `h_${i}` : item.id)}
-            renderItem={({ item }) =>
-              "_header" in item
-                ? renderSectionHeader(item._header)
-                : renderItem({ item })
-            }
-            contentContainerStyle={S.list}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </SafeAreaView>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+        </View>
+      ) : (
+        <SafeAreaView style={S.container}>
+          {listContent}
+        </SafeAreaView>
+      )}
     </Modal>
   );
 }
@@ -202,7 +218,9 @@ const styles = (C: any, shadow: any) =>
     unreadDot: {
       width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary,
     },
-    empty: { flex: 1, alignItems: "center", justifyContent: "center" },
+    empty: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 200 },
     emptyIcon: { fontSize: 48, marginBottom: 12 },
     emptyText: { fontSize: 16, color: C.textMuted },
+    webOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", paddingHorizontal: 16 },
+    webModalBox: { maxWidth: 520, width: "100%" as any, maxHeight: "85%" as any, backgroundColor: C.background, borderRadius: 20, overflow: "hidden" },
   });
