@@ -31,7 +31,7 @@ import { useNotification } from "../context/NotificationContext";
 import { useAuth } from "../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, radii } from "../constants/theme";
-import { formatDualDate } from "../lib/dateUtils";
+import { formatDualDate, getDuePeriodMonth } from "../lib/dateUtils";
 import { generateAndShareReceipt, ReceiptData } from "../lib/receiptGenerator";
 import { userKey, HIJRI_KEY, EJAR_IMPORT_KEY } from "../lib/storage";
 import WebContainer from "../components/WebContainer";
@@ -336,8 +336,11 @@ export default function UnitDetailScreen() {
     }
     setSavingPay(true);
     try {
-      const d = new Date(payDate);
-      const monthYear = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const monthYear = getDuePeriodMonth(
+        tenant?.lease_start ?? payDate,
+        tenant?.payment_frequency,
+        payDate,
+      );
       const { error } = await supabase.from("payments").insert([
         {
           tenant_id: resolvedTenantId,

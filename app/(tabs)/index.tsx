@@ -149,14 +149,13 @@ export default function DashboardScreen() {
     const thisMonth = new Date().toISOString().slice(0, 7);
     const [
       { data: props }, { data: activeTenants }, { data: allTenants },
-      { data: expData }, { data: payData }, { data: payByTenant },
+      { data: expData }, { data: payByTenant },
       { data: recentTenants }, { data: recentPayments }, { data: recentExpenses },
     ] = await Promise.all([
       supabase.from("properties").select("id, name, total_units"),
       supabase.from("tenants").select("id, name, unit_number, property_id, monthly_rent, lease_start, lease_end, payment_frequency, phone, properties!inner(name)").eq("status", "active"),
       supabase.from("tenants").select("id, status, properties!inner(id)"),
       supabase.from("expenses").select("amount, date, properties!inner(id)").gte("date", `${thisMonth}-01`).lte("date", `${thisMonth}-31`),
-      supabase.from("payments").select("amount, tenants!inner(properties!inner(id))").eq("month_year", thisMonth),
       supabase.from("payments").select("tenant_id, amount, tenants!inner(properties!inner(id))").eq("month_year", thisMonth),
       supabase.from("tenants")
         .select("id, name, unit_number, monthly_rent, created_at, properties!inner(id, name)")
@@ -188,8 +187,20 @@ export default function DashboardScreen() {
       isPaymentDueInMonth(tn.lease_start, tn.lease_end, tn.payment_frequency, thisMonth)
     );
 
-    setRevenue(paymentDueTenants.reduce((s: number, tn: any) => s + (tn.monthly_rent ?? 0), 0));
-    setCollected(payData?.reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0);
+    // Amount due this month per tenant — semi_annual tenants pay 50% per installment
+    const amountDueThisMonth = (tn: any) => {
+      const rent = tn.monthly_rent ?? 0;
+      if (tn.payment_frequency === "semi_annual") return rent / 2;
+      return rent;
+    };
+
+    setRevenue(paymentDueTenants.reduce((s: number, tn: any) => s + amountDueThisMonth(tn), 0));
+    // Only count payments from tenants whose rent is due this month
+    const paymentDueTenantIds = new Set(paymentDueTenants.map((tn: any) => tn.id));
+    const monthCollected = (payByTenant ?? [])
+      .filter((p: any) => paymentDueTenantIds.has(p.tenant_id))
+      .reduce((s: number, p: any) => s + (p.amount ?? 0), 0);
+    setCollected(monthCollected);
     setExpenses(expData?.reduce((s, e) => s + (e.amount ?? 0), 0) ?? 0);
     const units = (props ?? []).reduce((s: number, p: any) => s + p.total_units, 0);
     setTotalUnits(units);
@@ -204,9 +215,8 @@ export default function DashboardScreen() {
       occupied: leaseActiveTenants.filter((tn: any) => tn.property_id === p.id).length,
     })));
 
-    // Compute overdue tenants — only from tenants whose payment is due this month
+    // Compute unpaid tenants — any tenant whose payment is due this month and hasn't fully paid
     const today = new Date();
-    const currentDay = today.getDate();
     const paidByTenantMap = new Map<string, number>();
     for (const p of (payByTenant ?? [])) {
       paidByTenantMap.set(p.tenant_id, (paidByTenantMap.get(p.tenant_id) ?? 0) + (p.amount ?? 0));
@@ -216,22 +226,22 @@ export default function DashboardScreen() {
       if (!tn.lease_start) continue;
       const dueDay = new Date(tn.lease_start + "T12:00:00").getDate();
       const totalPaid = paidByTenantMap.get(tn.id) ?? 0;
-      if (currentDay >= dueDay && totalPaid < tn.monthly_rent) {
-        const daysOverdue = currentDay - dueDay;
+      const dueAmount = amountDueThisMonth(tn);
+      if (totalPaid < dueAmount) {
         overdueList.push({
           id: tn.id,
           name: tn.name,
           unitNumber: String(tn.unit_number),
           propertyName: (tn as any).properties?.name ?? "",
           propertyId: tn.property_id,
-          monthlyRent: tn.monthly_rent,
-          overdueAmount: tn.monthly_rent - totalPaid,
+          monthlyRent: dueAmount,
+          overdueAmount: dueAmount - totalPaid,
           dueDay,
-          daysOverdue,
+          daysOverdue: Math.max(0, today.getDate() - dueDay),
         });
       }
     }
-    overdueList.sort((a, b) => b.daysOverdue - a.daysOverdue);
+    overdueList.sort((a, b) => b.overdueAmount - a.overdueAmount);
     setOverdueTenants(overdueList);
 
     // Compute leases expiring within 30 days
@@ -262,19 +272,20 @@ export default function DashboardScreen() {
     });
     setBroadcastTenants(bList);
 
-    // Build recent updates with expanded detail
-    const overdueUpdates: Update[] = overdueList.map((ot) => {
-      // Use the actual due date this month so "time ago" reflects when rent became overdue
-      const dueDate = new Date(today.getFullYear(), today.getMonth(), ot.dueDay, 12, 0, 0);
-      return {
-      id: `o-${ot.id}`, icon: "⚠️", title: ot.name,
-      sub: `${t("overdue")} - ${t("unit")} ${ot.unitNumber}, ${ot.propertyName}`,
-      amount: ot.overdueAmount, time: dueDate.toISOString(), color: "#F59E0B",
-      detail: `${ot.daysOverdue} ${t("daysOverdue")}`,
-      propertyName: ot.propertyName,
-      unitNumber: ot.unitNumber,
-    };
-    });
+    // Build recent updates — only show tenants past their due day in the activity feed
+    const overdueUpdates: Update[] = overdueList
+      .filter((ot) => ot.daysOverdue > 0)
+      .map((ot) => {
+        const dueDate = new Date(today.getFullYear(), today.getMonth(), ot.dueDay, 12, 0, 0);
+        return {
+          id: `o-${ot.id}`, icon: "⚠️", title: ot.name,
+          sub: `${t("overdue")} - ${t("unit")} ${ot.unitNumber}, ${ot.propertyName}`,
+          amount: ot.overdueAmount, time: dueDate.toISOString(), color: "#F59E0B",
+          detail: `${ot.daysOverdue} ${t("daysOverdue")}`,
+          propertyName: ot.propertyName,
+          unitNumber: ot.unitNumber,
+        };
+      });
 
     const recentMerged: Update[] = [
       ...(recentTenants ?? []).map((tn: any) => ({
@@ -368,7 +379,7 @@ export default function DashboardScreen() {
   const netIncome = collected - expenses;
   const occupancyPct = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
   const collectionPct = revenue > 0 ? Math.round((collected / revenue) * 100) : 0;
-  const totalOverdue = overdueTenants.reduce((s, ot) => s + ot.overdueAmount, 0);
+  const totalOverdue = Math.max(0, revenue - collected);
 
   const handleOccPropertyPress = (p: PropertyOcc) => {
     setOccModal(false);
@@ -468,7 +479,7 @@ export default function DashboardScreen() {
                 {totalOverdue.toLocaleString()}
               </Text>
               <Text style={[S.statSub, isDesktop && { fontSize: 11 }]}>
-                {overdueTenants.length > 0 ? `${overdueTenants.length} ${t("tenantsOverdue")}` : "✅"}
+                {totalOverdue > 0 ? `${overdueTenants.length} ${t("tenantsOverdue")}` : "✅"}
               </Text>
             </Pressable>
             <Pressable

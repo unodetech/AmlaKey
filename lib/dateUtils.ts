@@ -87,6 +87,43 @@ export function isPaymentDueInMonth(
   return monthsElapsed % interval === 0;
 }
 
+/**
+ * Given a tenant's lease start, payment frequency, and the date a payment is made,
+ * return the YYYY-MM of the due period the payment belongs to.
+ *
+ * For monthly tenants the period is simply the payment-date month.
+ * For semi_annual / annual tenants the period is the most recent due-month
+ * that falls on or before the payment date (aligned to lease_start).
+ *
+ * This ensures that a split payment made months after the due date still
+ * gets attributed to the correct billing period.
+ */
+export function getDuePeriodMonth(
+  leaseStart: string,
+  frequency: string | undefined,
+  paymentDate: string | Date,
+): string {
+  const pd =
+    typeof paymentDate === "string"
+      ? new Date(paymentDate + (paymentDate.length === 10 ? "T12:00:00" : ""))
+      : paymentDate;
+
+  const freq = frequency || "monthly";
+  if (freq === "monthly") {
+    return `${pd.getFullYear()}-${String(pd.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  const ls = new Date(leaseStart + "T00:00:00");
+  const interval = freq === "annual" ? 12 : freq === "semi_annual" ? 6 : 1;
+
+  const monthsElapsed =
+    (pd.getFullYear() - ls.getFullYear()) * 12 + (pd.getMonth() - ls.getMonth());
+  const periodNumber = Math.max(0, Math.floor(monthsElapsed / interval));
+  const periodDate = new Date(ls.getFullYear(), ls.getMonth() + periodNumber * interval, 1);
+
+  return `${periodDate.getFullYear()}-${String(periodDate.getMonth() + 1).padStart(2, "0")}`;
+}
+
 /** Format a month string (YYYY-MM) as "March 2026" or "مارس 2026" with optional Hijri */
 export function formatMonthDual(
   monthStr: string,

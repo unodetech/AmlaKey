@@ -37,6 +37,7 @@ import { spacing, radii } from "../../constants/theme";
 import { userKey, EJAR_IMPORT_KEY } from "../../lib/storage";
 import WebContainer from "../../components/WebContainer";
 import { WebDateInput, modalBackdropStyle, ModalOverlay, webContentClickStop } from "../../components/WebDateInput";
+import { getDuePeriodMonth } from "../../lib/dateUtils";
 
 type TenantStatus = "active" | "expired";
 type FilterType = "all" | TenantStatus;
@@ -316,7 +317,7 @@ true;
               const payDate = new Date(start);
               payDate.setMonth(payDate.getMonth() + i * interval);
               const dateStr = payDate.toISOString().split("T")[0];
-              const monthYear = `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, "0")}`;
+              const monthYear = getDuePeriodMonth(currentTenant.lease_start, currentTenant.payment_frequency, payDate);
               payments.push({
                 tenant_id: currentTenant.id,
                 property_id: currentTenant.property_id,
@@ -394,11 +395,17 @@ true;
           const payments = [];
           const start = new Date(form.lease_start + "T12:00:00");
 
+          // Map EJAR payment type to our frequency for period attribution
+          const freqMap: Record<string, string> = {
+            "monthly": "monthly", "quarterly": "quarterly", "semi-annual": "semi_annual", "annual": "annual",
+          };
+          const tenantFreq = freqMap[ejarData.payment_type] || "monthly";
+
           for (let i = 0; i < paidCount; i++) {
             const payDate = new Date(start);
             payDate.setMonth(payDate.getMonth() + i * interval);
             const dateStr = payDate.toISOString().split("T")[0];
-            const monthYear = `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, "0")}`;
+            const monthYear = getDuePeriodMonth(form.lease_start, tenantFreq, payDate);
             payments.push({
               tenant_id: inserted.id,
               property_id: form.property_id || null,
@@ -441,7 +448,7 @@ true;
       return;
     }
     setPayingSaving(true);
-    const monthYear = `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, "0")}`;
+    const monthYear = getDuePeriodMonth(payTenant.lease_start, payTenant.payment_frequency, payDate);
     const { error } = await supabase.from("payments").insert([{
       tenant_id: payTenant.id,
       property_id: payTenant.property_id || null,

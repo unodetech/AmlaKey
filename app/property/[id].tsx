@@ -22,8 +22,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, radii } from "../../constants/theme";
 import { WebDateInput, modalBackdropStyle, ModalOverlay, webContentClickStop } from "../../components/WebDateInput";
+import { getDuePeriodMonth } from "../../lib/dateUtils";
 
-type TenantMap = Record<string, { id: string; name: string; status: string; monthly_rent: number }>;
+type TenantMap = Record<string, { id: string; name: string; status: string; monthly_rent: number; lease_start: string; payment_frequency?: string }>;
 type LabelMap = Record<string, string>;
 type PropertyType = "apartment" | "villa" | "commercial" | "shop";
 const CITIES = ["alkharj", "riyadh", "jeddah", "dammam"];
@@ -235,14 +236,14 @@ export default function PropertyUnitsScreen() {
     setLoading(true);
     try {
       const [{ data: tenants }, { data: labels }, { data: payments }] = await Promise.all([
-        supabase.from("tenants").select("id, name, unit_number, status, monthly_rent, lease_start").eq("property_id", id),
+        supabase.from("tenants").select("id, name, unit_number, status, monthly_rent, lease_start, payment_frequency").eq("property_id", id),
         supabase.from("unit_labels").select("unit_number, label, sec_account, nwc_account").eq("property_id", id),
         supabase.from("payments").select("tenant_id, month_year, amount").eq("property_id", id),
       ]);
       const tMap: TenantMap = {};
       (tenants ?? []).forEach((t: any) => {
         if (!tMap[String(t.unit_number)] || t.status === "active") {
-          tMap[String(t.unit_number)] = { id: t.id, name: t.name, status: t.status, monthly_rent: t.monthly_rent ?? 0 };
+          tMap[String(t.unit_number)] = { id: t.id, name: t.name, status: t.status, monthly_rent: t.monthly_rent ?? 0, lease_start: t.lease_start ?? "", payment_frequency: t.payment_frequency };
         }
       });
       setTenantMap(tMap);
@@ -313,17 +314,18 @@ export default function PropertyUnitsScreen() {
     }
     setBulkSaving(true);
     try {
-      const d = new Date(bulkPayDate + "T12:00:00");
-      const monthYear = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const inserts = Array.from(selectedUnits)
         .filter(unitKey => tenantMap[unitKey]?.id && id)
-        .map(unitKey => ({
-          tenant_id: tenantMap[unitKey].id,
-          property_id: id,
-          amount: tenantMap[unitKey].monthly_rent,
-          payment_date: bulkPayDate,
-          month_year: monthYear,
-        }));
+        .map(unitKey => {
+          const tn = tenantMap[unitKey];
+          return {
+            tenant_id: tn.id,
+            property_id: id,
+            amount: tn.monthly_rent,
+            payment_date: bulkPayDate,
+            month_year: getDuePeriodMonth(tn.lease_start || bulkPayDate, tn.payment_frequency, bulkPayDate),
+          };
+        });
       if (inserts.length === 0) {
         xAlert(t("error"), t("failedToLoadData"));
         setBulkSaving(false);
