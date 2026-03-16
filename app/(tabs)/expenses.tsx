@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -15,7 +14,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { showAlert, crossAlert } from "../../lib/alert";
+
+const isWeb = Platform.OS === "web";
+
+// DateTimePicker only available on native
+let DateTimePicker: any = null;
+if (!isWeb) {
+  DateTimePicker = require("@react-native-community/datetimepicker").default;
+}
 import { useFocusEffect } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { fetchSECBill, SECBillResult } from "../../lib/sec";
@@ -596,8 +603,8 @@ export default function ExpensesScreen() {
   async function confirmDeleteExpense(exp: Expense) {
     const { error } = await supabase.from("expenses").delete().eq("id", exp.id);
     if (error) {
-      if (Platform.OS === "web") window.alert(error.message);
-      else Alert.alert(t("error"), error.message);
+      if (isWeb) window.alert(error.message);
+      else showAlert(t("error"), error.message);
     } else {
       fetchAll();
     }
@@ -605,24 +612,24 @@ export default function ExpensesScreen() {
 
   async function deleteExpense(exp: Expense) {
     const msg = `${CATEGORY_ICONS[exp.category]} ${exp.amount.toLocaleString()} ${t("sar")}?`;
-    if (Platform.OS === "web") {
-      if (window.confirm(msg)) confirmDeleteExpense(exp);
-    } else {
-      Alert.alert(
-        t("delete") ?? "Delete",
-        msg,
-        [
-          { text: t("cancel"), style: "cancel" },
-          { text: t("delete") ?? "Delete", style: "destructive", onPress: () => confirmDeleteExpense(exp) },
-        ]
-      );
-    }
+    crossAlert(
+      t("delete") ?? "Delete",
+      msg,
+      [
+        { text: t("cancel"), style: "cancel" },
+        { text: t("delete") ?? "Delete", style: "destructive", onPress: () => confirmDeleteExpense(exp) },
+      ]
+    );
   }
 
   async function togglePaid(exp: Expense) {
     const newPaid = !exp.bill_paid;
     const { error } = await supabase.from("expenses").update({ bill_paid: newPaid }).eq("id", exp.id);
-    if (error) { Alert.alert(t("error"), error.message); return; }
+    if (error) {
+      if (isWeb) window.alert(error.message);
+      else showAlert(t("error"), error.message);
+      return;
+    }
     setExpenses(prev => prev.map(e => e.id === exp.id ? { ...e, bill_paid: newPaid } : e));
   }
 
@@ -668,7 +675,8 @@ export default function ExpensesScreen() {
       .eq("id", editTarget.id);
     setEditSaving(false);
     if (error) {
-      Alert.alert(t("error"), error.message);
+      if (isWeb) window.alert(error.message);
+      else showAlert(t("error"), error.message);
     } else {
       setEditModalVisible(false);
       setEditTarget(null);
@@ -794,7 +802,8 @@ export default function ExpensesScreen() {
       } catch (e: any) {
         setFetchingBill(false);
         setSaving(false);
-        Alert.alert(t("error"), e.message ?? t("fetchError"));
+        if (isWeb) window.alert(e.message ?? t("fetchError"));
+        else showAlert(t("error"), e.message ?? t("fetchError"));
       }
       return;
     }
@@ -814,8 +823,10 @@ export default function ExpensesScreen() {
     }
     const { error } = await supabase.from("expenses").insert([insertData]);
     setSaving(false);
-    if (error) { Alert.alert(t("error"), error.message); }
-    else {
+    if (error) {
+      if (isWeb) window.alert(error.message);
+      else showAlert(t("error"), error.message);
+    } else {
       setModalVisible(false);
       resetForm();
       fetchAll();
@@ -981,7 +992,7 @@ export default function ExpensesScreen() {
                     if (openSwipeId.current === exp.id) openSwipeId.current = null;
                   }}
                 >
-                  <Pressable style={({ hovered }: any) => [S.cardInner, hovered && Platform.OS === 'web' && S.cardInnerHover]} accessible={true} accessibilityLabel={`${t(exp.category as TKey)}: ${exp.amount.toLocaleString()} ${t("sar")}${exp.properties?.name ? `, ${exp.properties.name}` : ""}${exp.description ? `, ${exp.description}` : ""}`}>
+                  <Pressable style={({ hovered }: any) => [S.cardInner, hovered && isWeb && S.cardInnerHover]} accessible={true} accessibilityLabel={`${t(exp.category as TKey)}: ${exp.amount.toLocaleString()} ${t("sar")}${exp.properties?.name ? `, ${exp.properties.name}` : ""}${exp.description ? `, ${exp.description}` : ""}`}>
                     <View style={[S.cardRow, isRTL && S.rowRev]}>
                       <View style={[S.catIcon, { backgroundColor: CATEGORY_COLORS[exp.category] + "20" }]}>
                         <Text style={{ fontSize: 20 }}>{CATEGORY_ICONS[exp.category]}</Text>
@@ -1024,7 +1035,7 @@ export default function ExpensesScreen() {
         </WebContainer>
 
         {/* Add Modal */}
-        <Modal visible={modalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setModalVisible(false)}>
+        <Modal visible={modalVisible} animationType={isWeb ? 'fade' : 'slide'} transparent onRequestClose={() => setModalVisible(false)}>
           <ModalOverlay style={S.modalOverlay} onDismiss={() => { Keyboard.dismiss(); setModalVisible(false); }}>
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }} {...webContentClickStop}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -1087,7 +1098,7 @@ export default function ExpensesScreen() {
                       {!!addExpErrors.amount && <Text style={S.fieldError}>{addExpErrors.amount}</Text>}
 
                       <Text style={S.fieldLabel}>{t("date")}</Text>
-                      {Platform.OS === 'web' ? (
+                      {isWeb ? (
                         <WebDateInput
                           value={form.date}
                           onChange={(val) => {
@@ -1114,7 +1125,7 @@ export default function ExpensesScreen() {
                                 display="spinner"
                                 locale="en-US"
                                 themeVariant={isDark ? "dark" : "light"}
-                                onChange={(_, date) => {
+                                onChange={(_: any, date: any) => {
                                   if (date) {
                                     setSelectedDate(date);
                                     setForm({ ...form, date: formatDate(date) });
@@ -1280,7 +1291,7 @@ export default function ExpensesScreen() {
         </Modal>
 
         {/* Integration Modal */}
-        <Modal visible={integrationModal} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setIntegrationModal(false)}>
+        <Modal visible={integrationModal} animationType={isWeb ? 'fade' : 'slide'} transparent onRequestClose={() => setIntegrationModal(false)}>
           <ModalOverlay style={S.modalOverlay} onDismiss={() => { setIntegrationModal(false); fetchAll(); }}>
               <View style={[S.modalBox, { maxHeight: "75%" }]} {...webContentClickStop}>
                 {/* Header */}
@@ -1382,7 +1393,7 @@ export default function ExpensesScreen() {
         </Modal>
 
         {/* Edit Modal */}
-        <Modal visible={editModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setEditModalVisible(false)}>
+        <Modal visible={editModalVisible} animationType={isWeb ? 'fade' : 'slide'} transparent onRequestClose={() => setEditModalVisible(false)}>
           <ModalOverlay style={S.modalOverlay} onDismiss={() => { Keyboard.dismiss(); setEditModalVisible(false); }}>
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ maxHeight: "90%" }} {...webContentClickStop}>
               <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -1442,7 +1453,7 @@ export default function ExpensesScreen() {
                   {!!editExpErrors.amount && <Text style={S.fieldError}>{editExpErrors.amount}</Text>}
 
                   <Text style={S.fieldLabel}>{t("date")}</Text>
-                  {Platform.OS === 'web' ? (
+                  {isWeb ? (
                     <WebDateInput
                       value={editForm.date}
                       onChange={(val) => {
@@ -1469,7 +1480,7 @@ export default function ExpensesScreen() {
                             display="spinner"
                             locale="en-US"
                             themeVariant={isDark ? "dark" : "light"}
-                            onChange={(_, date) => {
+                            onChange={(_: any, date: any) => {
                               if (date) {
                                 setEditSelectedDate(date);
                                 setEditForm({ ...editForm, date: formatDate(date) });

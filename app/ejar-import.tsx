@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator, Alert, FlatList, Keyboard, Linking, Modal, Platform, ScrollView, StyleSheet,
+  ActivityIndicator, FlatList, Keyboard, Linking, Modal, Platform, ScrollView, StyleSheet,
   Text, TextInput, TouchableOpacity, View,
 } from "react-native";
+import { showAlert, crossAlert } from "../lib/alert";
 
 const isWeb = Platform.OS === "web";
 
@@ -262,7 +263,7 @@ export default function EjarImportScreen() {
     if (isWeb) {
       // On web, WebView is not available — open REGA in a new tab
       // User must manually look up contract and enter data
-      Alert.alert(
+      crossAlert(
         t("ejarImport"),
         "The REGA contract lookup will open in a new browser tab. Once you have your contract details, you can enter them manually.",
         [
@@ -641,9 +642,7 @@ true;
         payment_type: contractData.paymentType || "",
       })
     );
-    Alert.alert("✅", t("contractImported"), [
-      { text: "OK", onPress: () => router.back() },
-    ]);
+    showAlert("✅", t("contractImported"), () => router.back());
   }
 
   /* ── helpers ── */

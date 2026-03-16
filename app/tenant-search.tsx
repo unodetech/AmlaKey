@@ -1,10 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator, Alert, FlatList, Keyboard, KeyboardAvoidingView, Modal,
+  ActivityIndicator, FlatList, Keyboard, KeyboardAvoidingView, Modal,
   Platform, ScrollView, StyleSheet, Text, TextInput,
   TouchableOpacity, View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { showAlert, crossAlert } from "../lib/alert";
+
+const isWeb = Platform.OS === "web";
+
+// DateTimePicker only available on native
+let DateTimePicker: any = null;
+if (!isWeb) {
+  DateTimePicker = require("@react-native-community/datetimepicker").default;
+}
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { useLanguage } from "../context/LanguageContext";
@@ -91,7 +99,7 @@ export default function TenantSearchScreen() {
       setProperties(props ?? []);
     } catch (e) {
       if (__DEV__) console.error("TenantSearch fetchAll error:", e);
-      Alert.alert(t("error"), t("failedToLoadData"));
+      showAlert(t("error"), t("failedToLoadData"));
     } finally {
       setLoading(false);
     }
@@ -170,7 +178,7 @@ export default function TenantSearchScreen() {
 
   async function saveEdit() {
     if (!editTarget || !editForm.name.trim()) {
-      Alert.alert(t("error"), t("nameRequired"));
+      showAlert(t("error"), t("nameRequired"));
       return;
     }
     setEditSaving(true);
@@ -185,13 +193,13 @@ export default function TenantSearchScreen() {
       status,
     }).eq("id", editTarget.id);
     setEditSaving(false);
-    if (error) { Alert.alert(t("error"), error.message); return; }
+    if (error) { showAlert(t("error"), error.message); return; }
     setEditTarget(null);
     fetchAll();
   }
 
   function confirmDelete(item: TenantRow) {
-    Alert.alert(
+    crossAlert(
       t("delete"),
       t("deleteTenantMsg").replace("%name%", item.name),
       [
@@ -199,7 +207,7 @@ export default function TenantSearchScreen() {
         {
           text: t("delete"), style: "destructive", onPress: async () => {
             const { error } = await supabase.from("tenants").delete().eq("id", item.id);
-            if (error) Alert.alert(t("error"), error.message);
+            if (error) showAlert(t("error"), error.message);
             else fetchAll();
           },
         },

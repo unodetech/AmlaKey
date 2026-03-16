@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, Alert, ScrollView, StyleSheet, Text,
+  ActivityIndicator, ScrollView, StyleSheet, Text,
   TextInput, TouchableOpacity, View,
 } from "react-native";
+import { showAlert } from "../lib/alert";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
@@ -59,14 +60,14 @@ export default function PersonalInfoScreen() {
 
 
   const handleChangePassword = async () => {
-    if (newPw.length < 6) { Alert.alert(t("error"), t("passwordTooShort")); return; }
-    if (newPw !== confirmPw) { Alert.alert(t("error"), t("passwordMismatch")); return; }
+    if (newPw.length < 6) { showAlert(t("error"), t("passwordTooShort")); return; }
+    if (newPw !== confirmPw) { showAlert(t("error"), t("passwordMismatch")); return; }
     setPwSaving(true);
     const { error } = await supabase.auth.updateUser({ password: newPw });
     setPwSaving(false);
-    if (error) { Alert.alert(t("error"), error.message); }
+    if (error) { showAlert(t("error"), error.message); }
     else {
-      Alert.alert("✅", t("passwordChanged"));
+      showAlert("✅", t("passwordChanged"));
       setNewPw("");
       setConfirmPw("");
     }

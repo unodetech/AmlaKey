@@ -60,6 +60,28 @@ const TYPE_ICONS: Record<PropertyType, string> = {
   apartment: "🏢", villa: "🏡", commercial: "🏗️", shop: "🛍️",
 };
 
+/** Cross-platform alert: uses window.confirm / window.alert on web, Alert.alert on native */
+function xAlert(title: string, message: string, buttons?: Array<{ text: string; style?: string; onPress?: () => void }>) {
+  if (!isWeb) {
+    Alert.alert(title, message, buttons as any);
+    return;
+  }
+  if (!buttons || buttons.length <= 1) {
+    window.alert(message ? `${title}\n\n${message}` : title);
+    buttons?.[0]?.onPress?.();
+    return;
+  }
+  // Find the destructive / non-cancel action
+  const cancelBtn = buttons.find(b => b.style === "cancel");
+  const actionBtn = buttons.find(b => b.style !== "cancel") ?? buttons[buttons.length - 1];
+  const confirmed = window.confirm(message ? `${title}\n\n${message}` : title);
+  if (confirmed) {
+    actionBtn?.onPress?.();
+  } else {
+    cancelBtn?.onPress?.();
+  }
+}
+
 export default function PropertiesScreen() {
   const { t, isRTL } = useLanguage();
   const { colors: C, shadow } = useTheme();
@@ -204,7 +226,7 @@ export default function PropertiesScreen() {
       longitude: form.longitude,
     }]);
     setSaving(false);
-    if (error) { Alert.alert(t("error"), error.message); }
+    if (error) { xAlert(t("error"), error.message); }
     else {
       setAddVisible(false);
       setForm(EMPTY_FORM);
@@ -268,7 +290,7 @@ export default function PropertiesScreen() {
       })
       .eq("id", editTarget.id);
     setEditSaving(false);
-    if (error) { Alert.alert(t("error"), error.message); }
+    if (error) { xAlert(t("error"), error.message); }
     else {
       setEditVisible(false);
       setEditTarget(null);
@@ -277,15 +299,24 @@ export default function PropertiesScreen() {
   }
 
   function confirmDelete(p: Property) {
-    Alert.alert(
+    xAlert(
       t("deletePropertyTitle"),
       `${t("delete")} "${p.name}"? ${t("deletePropertyMsg")}`,
       [
         { text: t("cancel"), style: "cancel" },
         {
           text: t("delete"), style: "destructive", onPress: async () => {
+            // Cascade: expire tenants, delete their payments, delete expenses
+            const { data: propTenants } = await supabase
+              .from("tenants").select("id").eq("property_id", p.id);
+            const tenantIds = (propTenants ?? []).map((t: any) => t.id);
+            if (tenantIds.length > 0) {
+              await supabase.from("payments").delete().in("tenant_id", tenantIds);
+              await supabase.from("tenants").delete().in("id", tenantIds);
+            }
+            await supabase.from("expenses").delete().eq("property_id", p.id);
             const { error } = await supabase.from("properties").delete().eq("id", p.id);
-            if (error) Alert.alert(t("error"), error.message);
+            if (error) xAlert(t("error"), error.message);
             else fetchProperties();
           },
         },
@@ -317,7 +348,7 @@ export default function PropertiesScreen() {
         <WebContainer maxWidth={1200}>
         <View style={[S.header, { paddingTop: insets.top + 10 }, isRTL && S.rowRev]}>
           <Text style={S.headerTitle}>{t("properties")}</Text>
-          <TouchableOpacity style={S.addBtn} onPress={() => { if (!canAddProperty(properties.length)) { Alert.alert(t("propertyLimitTitle"), t("propertyLimitMsg"), [{ text: t("upgrade"), onPress: () => router.push("/paywall" as any) }, { text: t("later"), style: "cancel" }]); return; } const f = { ...EMPTY_FORM, city: defaultCity }; setForm(f); setAddPropErrors({}); setAddVisible(true); if (!isWeb) { detectCityFromLocation(setForm); } }} accessibilityRole="button" accessibilityLabel={t("addProperty")}>
+          <TouchableOpacity style={S.addBtn} onPress={() => { if (!canAddProperty(properties.length)) { xAlert(t("propertyLimitTitle"), t("propertyLimitMsg"), [{ text: t("upgrade"), onPress: () => router.push("/paywall" as any) }, { text: t("later"), style: "cancel" }]); return; } const f = { ...EMPTY_FORM, city: defaultCity }; setForm(f); setAddPropErrors({}); setAddVisible(true); if (!isWeb) { detectCityFromLocation(setForm); } }} accessibilityRole="button" accessibilityLabel={t("addProperty")}>
             <Text style={S.addBtnText}>+ {t("add")}</Text>
           </TouchableOpacity>
         </View>
@@ -408,6 +439,16 @@ export default function PropertiesScreen() {
                     <View style={{ flex: 1, marginHorizontal: 8 }}>
                       <Text style={[S.cardName, isRTL && { textAlign: "right" }, isDesktop && { fontSize: 16 }]}>{p.name}</Text>
                       <Text style={[S.cardCity, isRTL && { textAlign: "right" }]}>{p.city}</Text>
+                    {isWeb && (
+                      <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }} {...{ onClick: (e: any) => e.stopPropagation() } as any}>
+                        <TouchableOpacity onPress={() => openEdit(p)} style={S.webActionBtn} accessibilityRole="button" accessibilityLabel={t("edit")}>
+                          <Text style={S.webActionBtnText}>✏️ {t("edit")}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => confirmDelete(p)} style={[S.webActionBtn, S.webDeleteBtn]} accessibilityRole="button" accessibilityLabel={t("delete")}>
+                          <Text style={S.webDeleteBtnText}>🗑️ {t("delete")}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                       {!!p.notes && (
                         <Text style={[S.cardNotes, isRTL && { textAlign: "right" }]} numberOfLines={1}>
                           📝 {p.notes}
@@ -721,4 +762,8 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   fieldError: { fontSize: 11, color: "#EF4444", marginTop: -6, marginBottom: 6 },
   inputError: { borderColor: "#EF4444" },
+  webActionBtn: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: "rgba(2,132,199,0.1)" },
+  webActionBtnText: { fontSize: 11, color: "#0284C7", fontWeight: "600" },
+  webDeleteBtn: { backgroundColor: "rgba(220,38,38,0.1)" },
+  webDeleteBtnText: { fontSize: 11, color: "#DC2626", fontWeight: "600" },
 });

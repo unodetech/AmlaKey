@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -14,10 +13,19 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { WebView } from "react-native-webview";
+import { showAlert, crossAlert } from "../../lib/alert";
+
+const isWeb = Platform.OS === "web";
+
+// Native-only imports (crash on web)
+let WebView: any = null;
+let DateTimePicker: any = null;
+if (!isWeb) {
+  WebView = require("react-native-webview").WebView;
+  DateTimePicker = require("@react-native-community/datetimepicker").default;
+}
 import { SwipeableRow, SwipeableRowRef } from "../../components/SwipeableRow";
 import { SkeletonList } from "../../components/SkeletonLoader";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../../lib/supabase";
@@ -29,8 +37,6 @@ import { spacing, radii } from "../../constants/theme";
 import { userKey, EJAR_IMPORT_KEY } from "../../lib/storage";
 import WebContainer from "../../components/WebContainer";
 import { WebDateInput, modalBackdropStyle, ModalOverlay, webContentClickStop } from "../../components/WebDateInput";
-
-const isWeb = Platform.OS === "web";
 
 type TenantStatus = "active" | "expired";
 type FilterType = "all" | TenantStatus;
@@ -239,6 +245,7 @@ true;
 `;
 
   async function backgroundSyncEjarPayments() {
+    if (isWeb) return; // WebView not available on web
     if (ejarSyncing.current) return;
     ejarSyncing.current = true;
     try {
@@ -336,25 +343,27 @@ true;
     }
   }
 
+  // Use imported showAlert from lib/alert (cross-platform)
+
   async function addTenant() {
     if (!form.name.trim() || form.name.trim().length < 4) {
-      Alert.alert(t("error"), t("validationNameTooShort"));
+      showAlert(t("error"), t("validationNameTooShort"));
       return;
     }
     if (form.phone.trim() && !/^05\d{8}$/.test(form.phone.trim())) {
-      Alert.alert(t("error"), t("validationPhoneInvalid"));
+      showAlert(t("error"), t("validationPhoneInvalid"));
       return;
     }
     if (!form.monthly_rent.trim() || parseFloat(form.monthly_rent) <= 0) {
-      Alert.alert(t("error"), t("validationAmountPositive"));
+      showAlert(t("error"), t("validationAmountPositive"));
       return;
     }
     if (!form.lease_start.trim()) {
-      Alert.alert(t("error"), t("leaseStartRequired"));
+      showAlert(t("error"), t("leaseStartRequired"));
       return;
     }
     if (!form.lease_end.trim()) {
-      Alert.alert(t("error"), t("leaseEndRequired"));
+      showAlert(t("error"), t("leaseEndRequired"));
       return;
     }
     setSaving(true);
@@ -371,7 +380,7 @@ true;
       status: form.lease_end && new Date(form.lease_end) < new Date() ? "expired" : "active",
     }]).select("id").single();
     setSaving(false);
-    if (error) { Alert.alert(t("error"), error.message); }
+    if (error) { showAlert(t("error"), error.message); }
     else {
       // Auto-generate payment records from Ejar billing data
       if (ejarData && inserted?.id && ejarData.bill_count > 0) {
@@ -422,25 +431,29 @@ true;
 
   async function recordPayment() {
     if (!payTenant) return;
-    if (!payAmount) { Alert.alert(t("error"), t("amountRequired")); return; }
-    if (!payTenant.id || !payTenant.property_id) {
-      Alert.alert(t("error"), t("failedToLoadData"));
+    const amt = parseFloat(payAmount);
+    if (!payAmount || isNaN(amt) || amt <= 0) {
+      showAlert(t("error"), t("amountRequired"));
+      return;
+    }
+    if (!payTenant.id) {
+      showAlert(t("error"), t("failedToLoadData"));
       return;
     }
     setPayingSaving(true);
     const monthYear = `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, "0")}`;
     const { error } = await supabase.from("payments").insert([{
       tenant_id: payTenant.id,
-      property_id: payTenant.property_id,
-      amount: parseFloat(payAmount),
+      property_id: payTenant.property_id || null,
+      amount: amt,
       payment_date: payDate.toISOString().split("T")[0],
       month_year: monthYear,
     }]);
     setPayingSaving(false);
-    if (error) { Alert.alert(t("error"), error.message); }
+    if (error) { showAlert(t("error"), error.message); }
     else {
       setPayModalVisible(false);
-      Alert.alert("✅", t("paymentRecorded") ?? "Payment recorded!");
+      showAlert("", t("paymentRecorded") ?? "Payment recorded!");
     }
   }
 
@@ -465,19 +478,19 @@ true;
   async function updateTenant() {
     if (!editTenant) return;
     if (!editForm.name.trim() || editForm.name.trim().length < 4) {
-      Alert.alert(t("error"), t("validationNameTooShort"));
+      showAlert(t("error"), t("validationNameTooShort"));
       return;
     }
     if (editForm.phone.trim() && !/^05\d{8}$/.test(editForm.phone.trim())) {
-      Alert.alert(t("error"), t("validationPhoneInvalid"));
+      showAlert(t("error"), t("validationPhoneInvalid"));
       return;
     }
     if (!editForm.monthly_rent.trim() || parseFloat(editForm.monthly_rent) <= 0) {
-      Alert.alert(t("error"), t("validationAmountPositive"));
+      showAlert(t("error"), t("validationAmountPositive"));
       return;
     }
     if (!editForm.lease_start.trim()) {
-      Alert.alert(t("error"), t("leaseStartRequired"));
+      showAlert(t("error"), t("leaseStartRequired"));
       return;
     }
     setEditSaving(true);
@@ -493,19 +506,19 @@ true;
       status: editForm.lease_end && new Date(editForm.lease_end) < new Date() ? "expired" : "active",
     }).eq("id", editTenant.id);
     setEditSaving(false);
-    if (error) { Alert.alert(t("error"), error.message); }
+    if (error) { showAlert(t("error"), error.message); }
     else { setEditModalVisible(false); fetchAll(); }
   }
 
   async function deleteTenant(tenant: Tenant) {
-    Alert.alert(
+    crossAlert(
       t("delete") ?? "Delete",
       `"${tenant.name}"?`,
       [
         { text: t("cancel"), style: "cancel" },
         { text: t("delete") ?? "Delete", style: "destructive", onPress: async () => {
           const { error } = await supabase.from("tenants").delete().eq("id", tenant.id);
-          if (error) Alert.alert(t("error"), error.message);
+          if (error) showAlert(t("error"), error.message);
           else fetchAll();
         }},
       ]
@@ -812,7 +825,7 @@ true;
                             display="spinner"
                             locale="en-US"
                             themeVariant={isDark ? "dark" : "light"}
-                            onChange={(_, date) => {
+                            onChange={(_: any, date: any) => {
                               if (date) {
                                 setLeaseStartDate(date);
                                 setForm({ ...form, lease_start: formatDate(date) });
@@ -858,7 +871,7 @@ true;
                             display="spinner"
                             locale="en-US"
                             themeVariant={isDark ? "dark" : "light"}
-                            onChange={(_, date) => {
+                            onChange={(_: any, date: any) => {
                               if (date) {
                                 setLeaseEndDate(date);
                                 setForm({ ...form, lease_end: formatDate(date) });
@@ -959,7 +972,7 @@ true;
                           display="spinner"
                           locale="en-US"
                           themeVariant={isDark ? "dark" : "light"}
-                          onChange={(_, date) => {
+                          onChange={(_: any, date: any) => {
                             if (date) setPayDate(date);
                           }}
                         />
@@ -1037,7 +1050,7 @@ true;
                             display="spinner"
                             locale="en-US"
                             themeVariant={isDark ? "dark" : "light"}
-                            onChange={(_, date) => {
+                            onChange={(_: any, date: any) => {
                               if (date) { setEditLeaseStartDate(date); setEditForm({ ...editForm, lease_start: date.toISOString().split("T")[0] }); }
                             }}
                           />
@@ -1089,7 +1102,7 @@ true;
                                 display="spinner"
                                 locale="en-US"
                                 themeVariant={isDark ? "dark" : "light"}
-                                onChange={(_, date) => {
+                                onChange={(_: any, date: any) => {
                                   if (date) { setEditLeaseEndDate(date); setEditForm({ ...editForm, lease_end: date.toISOString().split("T")[0] }); }
                                 }}
                               />
@@ -1139,8 +1152,8 @@ true;
           </ModalOverlay>
         </Modal>
 
-        {/* Hidden WebView for Ejar background sync */}
-        {ejarSyncUrl && (
+        {/* Hidden WebView for Ejar background sync — native only */}
+        {!isWeb && ejarSyncUrl && (
           <WebView
             ref={ejarWebViewRef}
             source={{ uri: ejarSyncUrl }}

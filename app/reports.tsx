@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text,
+  ActivityIndicator, Platform, ScrollView, StyleSheet, Text,
   TouchableOpacity, View,
 } from "react-native";
+import { showAlert, crossAlert } from "../lib/alert";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { useLanguage, TKey } from "../context/LanguageContext";
@@ -122,7 +123,7 @@ export default function ReportsScreen() {
       });
     } catch (e) {
       if (__DEV__) console.error(e);
-      Alert.alert(t("error"), t("failedToLoadData"));
+      showAlert(t("error"), t("failedToLoadData"));
     }
     setLoading(false);
   }
@@ -172,7 +173,7 @@ export default function ReportsScreen() {
 
   async function exportSpreadsheet() {
     if (!hasFeature("export_reports")) {
-      Alert.alert(t("upgradeRequired"), t("upgradeToUnlock"), [
+      crossAlert(t("upgradeRequired"), t("upgradeToUnlock"), [
         { text: t("upgrade"), onPress: () => router.push("/paywall" as any) },
         { text: t("later"), style: "cancel" },
       ]);
@@ -247,7 +248,7 @@ export default function ReportsScreen() {
         });
       }
     } catch (e: any) {
-      Alert.alert(t("error"), e.message);
+      showAlert(t("error"), e.message);
     }
     setExporting(false);
   }
@@ -332,7 +333,7 @@ export default function ReportsScreen() {
 
   async function exportPDF() {
     if (!hasFeature("export_reports")) {
-      Alert.alert(t("upgradeRequired"), t("upgradeToUnlock"), [
+      crossAlert(t("upgradeRequired"), t("upgradeToUnlock"), [
         { text: t("upgrade"), onPress: () => router.push("/paywall" as any) },
         { text: t("later"), style: "cancel" },
       ]);
@@ -366,7 +367,7 @@ export default function ReportsScreen() {
         await Sharing!.shareAsync(uri, { mimeType: "application/pdf", UTI: "com.adobe.pdf" });
       }
     } catch (e: any) {
-      Alert.alert(t("error"), e.message);
+      showAlert(t("error"), e.message);
     }
     setExporting(false);
   }

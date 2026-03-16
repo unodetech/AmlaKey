@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   Linking,
   KeyboardAvoidingView,
@@ -14,7 +13,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { showAlert, crossAlert } from "../lib/alert";
+
+const isWeb = Platform.OS === "web";
+
+// DateTimePicker only available on native
+let DateTimePicker: any = null;
+if (!isWeb) {
+  DateTimePicker = require("@react-native-community/datetimepicker").default;
+}
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../lib/supabase";
@@ -29,8 +36,6 @@ import { generateAndShareReceipt, ReceiptData } from "../lib/receiptGenerator";
 import { userKey, HIJRI_KEY, EJAR_IMPORT_KEY } from "../lib/storage";
 import WebContainer from "../components/WebContainer";
 import { WebDateInput, modalBackdropStyle, ModalOverlay, webContentClickStop } from "../components/WebDateInput";
-
-const isWeb = Platform.OS === "web";
 
 type Tenant = {
   id: string;
@@ -188,7 +193,8 @@ export default function UnitDetailScreen() {
       setTenant(data);
     } catch (e) {
       if (__DEV__) console.error("fetchTenant error:", e);
-      Alert.alert(t("error"), t("failedToLoadData"));
+      if (isWeb) window.alert(`${t("error")}: ${t("failedToLoadData")}`);
+      else showAlert(t("error"), t("failedToLoadData"));
     } finally {
       setLoadingTenant(false);
     }
@@ -262,6 +268,11 @@ export default function UnitDetailScreen() {
 
   // ── Add Tenant ──────────────────────────────────────────────
   const handleAddTenant = async () => {
+    if (!propertyId || !unitNumber) {
+      if (isWeb) window.alert(`${t("error")}: ${t("failedToLoadData")}`);
+      else showAlert(t("error"), t("failedToLoadData"));
+      return;
+    }
     const errors: Record<string, string> = {};
     if (!form.name.trim() || form.name.trim().length < 4) {
       errors.name = t("validationNameTooShort");
@@ -307,7 +318,8 @@ export default function UnitDetailScreen() {
       setForm(EMPTY_FORM);
       router.back();
     } catch (e: any) {
-      Alert.alert(t("error"), e.message);
+      if (isWeb) window.alert(`${t("error")}: ${e.message}`);
+      else showAlert(t("error"), e.message);
     } finally {
       setSaving(false);
     }
@@ -318,7 +330,8 @@ export default function UnitDetailScreen() {
     const resolvedTenantId = tenant?.id || tenantId;
     const resolvedPropertyId = (tenant as any)?.property_id || propertyId;
     if (!resolvedTenantId || !resolvedPropertyId) {
-      Alert.alert(t("error"), t("failedToLoadData"));
+      if (isWeb) window.alert(`${t("error")}: ${t("failedToLoadData")}`);
+      else showAlert(t("error"), t("failedToLoadData"));
       return;
     }
     setSavingPay(true);
@@ -355,37 +368,33 @@ export default function UnitDetailScreen() {
       fetchPayments();
       // Offer to share receipt
       if (tenant) {
-        if (isWeb) {
-          window.alert(t("paymentRecorded") ?? "Payment recorded!");
-        } else {
-          Alert.alert(
-            "✅",
-            t("paymentRecorded"),
-            [
-              { text: t("cancel"), style: "cancel" },
-              {
-                text: t("shareReceipt"),
-                onPress: () => {
-                  const receiptData: ReceiptData = {
-                    receiptNumber: `RCP-${Date.now().toString(36).toUpperCase()}`,
-                    tenantName: tenant.name,
-                    propertyName: propertyName || "",
-                    unitNumber: unitLabel || unitNumber || "",
-                    amount: parseFloat(savedAmount),
-                    paymentDate: savedDate,
-                    monthYear: savedMonthYear,
-                    lang,
-                  };
-                  generateAndShareReceipt(receiptData).catch(() => {});
-                },
+        crossAlert(
+          "✅",
+          t("paymentRecorded"),
+          [
+            { text: t("cancel"), style: "cancel" },
+            {
+              text: t("shareReceipt"),
+              onPress: () => {
+                const receiptData: ReceiptData = {
+                  receiptNumber: `RCP-${Date.now().toString(36).toUpperCase()}`,
+                  tenantName: tenant.name,
+                  propertyName: propertyName || "",
+                  unitNumber: unitLabel || unitNumber || "",
+                  amount: parseFloat(savedAmount),
+                  paymentDate: savedDate,
+                  monthYear: savedMonthYear,
+                  lang,
+                };
+                generateAndShareReceipt(receiptData).catch(() => {});
               },
-            ]
-          );
-        }
+            },
+          ]
+        );
       }
     } catch (e: any) {
       if (isWeb) window.alert(`${t("error")}: ${e.message}`);
-      else Alert.alert(t("error"), e.message);
+      else showAlert(t("error"), e.message);
     } finally {
       setSavingPay(false);
     }
@@ -415,7 +424,7 @@ export default function UnitDetailScreen() {
         );
         if (proceed) doInsertPayment();
       } else {
-        Alert.alert(
+        crossAlert(
           "⚠️",
           t("duplicatePaymentWarning") ?? `A payment for ${monthYear} already exists. Record anyway?`,
           [
@@ -431,31 +440,29 @@ export default function UnitDetailScreen() {
 
   // ── End Lease ────────────────────────────────────────────────
   const handleEndLease = () => {
+    const resolvedId = tenant?.id || tenantId;
+    if (!resolvedId) return;
     const doEnd = async () => {
       setEndingLease(true);
       try {
-        const { error } = await supabase.from("tenants").update({ status: "expired" }).eq("id", tenantId);
+        const { error } = await supabase.from("tenants").update({ status: "expired" }).eq("id", resolvedId);
         if (error) throw error;
         fetchTenant();
       } catch (e: any) {
         if (isWeb) window.alert(e.message);
-        else Alert.alert(t("error"), e.message);
+        else showAlert(t("error"), e.message);
       } finally {
         setEndingLease(false);
       }
     };
-    if (isWeb) {
-      if (window.confirm(`${t("endLease")} ${tenant?.name}?`)) doEnd();
-    } else {
-      Alert.alert(
-        t("endLease"),
-        `${t("endLease")} ${tenant?.name}?`,
-        [
-          { text: t("cancel"), style: "cancel" },
-          { text: t("endLease"), style: "destructive", onPress: doEnd },
-        ]
-      );
-    }
+    crossAlert(
+      t("endLease"),
+      `${t("endLease")} ${tenant?.name}?`,
+      [
+        { text: t("cancel"), style: "cancel" },
+        { text: t("endLease"), style: "destructive", onPress: doEnd },
+      ]
+    );
   };
 
   // ── Renew Lease ────────────────────────────────────────────
@@ -467,9 +474,12 @@ export default function UnitDetailScreen() {
 
   const handleRenewLease = async () => {
     if (!renewLeaseEnd) {
-      Alert.alert(t("error"), t("selectDate"));
+      if (isWeb) window.alert(`${t("error")}: ${t("selectDate")}`);
+      else showAlert(t("error"), t("selectDate"));
       return;
     }
+    const resolvedId = tenant?.id || tenantId;
+    if (!resolvedId) return;
     setRenewingLease(true);
     try {
       const updates: Record<string, string> = { lease_end: renewLeaseEnd };
@@ -478,13 +488,15 @@ export default function UnitDetailScreen() {
       const { error } = await supabase
         .from("tenants")
         .update(updates)
-        .eq("id", tenantId);
+        .eq("id", resolvedId);
       if (error) throw error;
       setShowRenewModal(false);
-      Alert.alert("✅", t("leaseRenewed"));
+      if (isWeb) window.alert(t("leaseRenewed"));
+      else showAlert("✅", t("leaseRenewed"));
       fetchTenant();
     } catch (e: any) {
-      Alert.alert(t("error"), e.message);
+      if (isWeb) window.alert(`${t("error")}: ${e.message}`);
+      else showAlert(t("error"), e.message);
     } finally {
       setRenewingLease(false);
     }
@@ -543,7 +555,8 @@ export default function UnitDetailScreen() {
       setShowEditTenantModal(false);
       fetchTenant();
     } catch (e: any) {
-      Alert.alert(t("error"), e.message);
+      if (isWeb) window.alert(`${t("error")}: ${e.message}`);
+      else showAlert(t("error"), e.message);
     } finally {
       setSavingEditTenant(false);
     }
@@ -578,7 +591,8 @@ export default function UnitDetailScreen() {
       setEditPayment(null);
       fetchPayments();
     } catch (e: any) {
-      Alert.alert(t("error"), e.message);
+      if (isWeb) window.alert(`${t("error")}: ${e.message}`);
+      else showAlert(t("error"), e.message);
     } finally {
       setSavingEditPay(false);
     }
@@ -681,9 +695,10 @@ export default function UnitDetailScreen() {
                       const phone = tenant.phone.startsWith("0")
                         ? "966" + tenant.phone.slice(1)
                         : tenant.phone;
-                      Linking.openURL(`https://wa.me/${phone}`).catch(() =>
-                        Alert.alert(t("error"), t("whatsappNotInstalled"))
-                      );
+                      Linking.openURL(`https://wa.me/${phone}`).catch(() => {
+                        if (isWeb) window.alert(`${t("error")}: ${t("whatsappNotInstalled")}`);
+                        else showAlert(t("error"), t("whatsappNotInstalled"));
+                      });
                     }}
                   >
                     <Text style={{ fontSize: 16 }}>💬</Text>
@@ -758,9 +773,10 @@ export default function UnitDetailScreen() {
                 .replace("%name%", tenant.name)
                 .replace("%amount%", String(tenant.monthly_rent));
               const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`;
-              Linking.openURL(url).catch(() =>
-                Alert.alert(t("error"), t("whatsappNotInstalled"))
-              );
+              Linking.openURL(url).catch(() => {
+                if (isWeb) window.alert(`${t("error")}: ${t("whatsappNotInstalled")}`);
+                else showAlert(t("error"), t("whatsappNotInstalled"));
+              });
             }}
             activeOpacity={0.8}
           >

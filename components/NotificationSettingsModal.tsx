@@ -3,7 +3,11 @@ import {
   Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Switch,
   Text, TouchableOpacity, View,
 } from "react-native";
-import * as Haptics from "expo-haptics";
+const isWeb = Platform.OS === "web";
+let Haptics: typeof import("expo-haptics") | null = null;
+if (!isWeb) {
+  Haptics = require("expo-haptics");
+}
 import { useNotification, NotificationSettings, DEFAULT_SETTINGS } from "../context/NotificationContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
@@ -31,19 +35,19 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
   }, [visible, settings]);
 
   const handleSave = async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Haptics?.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (!permissionGranted) await requestPermission();
     await updateSettings(local);
     onClose();
   };
 
   const toggle = (key: keyof NotificationSettings) => {
-    Haptics.selectionAsync();
+    Haptics?.selectionAsync();
     setLocal((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const setDays = (key: "rentReminderDaysBefore" | "leaseExpiryDaysBefore", val: number) => {
-    Haptics.selectionAsync();
+    Haptics?.selectionAsync();
     setLocal((prev) => ({ ...prev, [key]: val }));
   };
 

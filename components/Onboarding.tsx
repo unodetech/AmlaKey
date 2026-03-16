@@ -1,15 +1,22 @@
 import React, { useCallback, useMemo } from "react";
 import {
-  Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View,
+  Dimensions, Modal, Platform, StyleSheet, Text, TouchableOpacity, View,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   interpolate, runOnJS, SharedValue, useAnimatedStyle, useSharedValue, withSpring, withTiming,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import { spacing, radii } from "../constants/theme";
+
+const isWeb = Platform.OS === "web";
+
+// Lazy-load expo-haptics only on native (crashes on web)
+let Haptics: typeof import("expo-haptics") | null = null;
+if (!isWeb) {
+  Haptics = require("expo-haptics");
+}
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_H_PADDING = 20;
@@ -56,7 +63,7 @@ export function Onboarding({ visible, onComplete }: Props) {
     const clamped = Math.max(0, Math.min(idx, SLIDE_COUNT - 1));
     currentSlide.value = clamped;
     translateX.value = withTiming(-clamped * CARD_WIDTH, { duration: 300 });
-    runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+    if (Haptics) runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
   const goNext = useCallback(() => {

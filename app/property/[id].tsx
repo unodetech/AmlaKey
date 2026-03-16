@@ -28,6 +28,27 @@ type UnitAccountMap = Record<string, { sec_account?: string; nwc_account?: strin
 const TYPE_COLORS: Record<PropertyType, string> = { apartment: "#0EA5E9", villa: "#14B8A6", commercial: "#F59E0B", shop: "#A855F7" };
 const TYPE_ICONS: Record<PropertyType, string> = { apartment: "🏢", villa: "🏡", commercial: "🏗️", shop: "🛍️" };
 
+/** Cross-platform alert: uses window.confirm / window.alert on web, Alert.alert on native */
+function xAlert(title: string, message: string, buttons?: Array<{ text: string; style?: string; onPress?: () => void }>) {
+  if (!isWeb) {
+    Alert.alert(title, message, buttons as any);
+    return;
+  }
+  if (!buttons || buttons.length <= 1) {
+    window.alert(message ? `${title}\n\n${message}` : title);
+    buttons?.[0]?.onPress?.();
+    return;
+  }
+  const cancelBtn = buttons.find(b => b.style === "cancel");
+  const actionBtn = buttons.find(b => b.style !== "cancel") ?? buttons[buttons.length - 1];
+  const confirmed = window.confirm(message ? `${title}\n\n${message}` : title);
+  if (confirmed) {
+    actionBtn?.onPress?.();
+  } else {
+    cancelBtn?.onPress?.();
+  }
+}
+
 export default function PropertyUnitsScreen() {
   const { id, name, total_units, type: routeType } = useLocalSearchParams<{
     id: string; name: string; total_units: string; type: string;
@@ -157,7 +178,7 @@ export default function PropertyUnitsScreen() {
     if (!account.trim()) return;
     const prefix = `${type}_${account.trim()}_`;
     const label = type === "sec" ? t("electricity") ?? "Electricity" : t("water") ?? "Water";
-    Alert.alert(
+    xAlert(
       t("delete") ?? "Delete",
       `${t("deleteBillsConfirm") ?? "Delete all"} ${label} ${t("bills") ?? "bills"}?`,
       [
@@ -170,7 +191,7 @@ export default function PropertyUnitsScreen() {
               .from("expenses")
               .delete()
               .like("bill_ref", `${prefix}%`);
-            if (error) Alert.alert(t("error") ?? "Error", error.message);
+            if (error) xAlert(t("error") ?? "Error", error.message);
             else onDone();
           },
         },
@@ -179,7 +200,8 @@ export default function PropertyUnitsScreen() {
   }
 
   async function savePropertyEdit() {
-    if (!editForm.name.trim()) { Alert.alert(t("error"), t("nameRequired") ?? "Name required"); return; }
+    if (!id) return;
+    if (!editForm.name.trim()) { xAlert(t("error"), t("nameRequired") ?? "Name required"); return; }
     setEditSaving(true);
     const { error } = await supabase.from("properties").update({
       name: editForm.name.trim(), type: editForm.type, city: editForm.city,
@@ -189,9 +211,9 @@ export default function PropertyUnitsScreen() {
       notes: editForm.notes.trim() || null,
       latitude: editForm.latitude,
       longitude: editForm.longitude,
-    }).eq("id", id!);
+    }).eq("id", id);
     setEditSaving(false);
-    if (error) { Alert.alert(t("error"), error.message); }
+    if (error) { xAlert(t("error"), error.message); }
     else { setPropName(editForm.name.trim()); setEditModal(false); fetchData(); }
   }
 
@@ -248,7 +270,7 @@ export default function PropertyUnitsScreen() {
       setOverdueUnits(odu);
     } catch (e) {
       if (__DEV__) console.error("fetchData error:", e);
-      Alert.alert(t("error"), t("failedToLoadData"));
+      xAlert(t("error"), t("failedToLoadData"));
     } finally {
       setLoading(false);
     }
@@ -282,7 +304,7 @@ export default function PropertyUnitsScreen() {
 
   const handleBulkPayment = async () => {
     if (selectedUnits.size === 0 || !bulkPayDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      Alert.alert(t("error"), t("validDateFormat"));
+      xAlert(t("error"), t("validDateFormat"));
       return;
     }
     setBulkSaving(true);
@@ -299,7 +321,7 @@ export default function PropertyUnitsScreen() {
           month_year: monthYear,
         }));
       if (inserts.length === 0) {
-        Alert.alert(t("error"), t("failedToLoadData"));
+        xAlert(t("error"), t("failedToLoadData"));
         setBulkSaving(false);
         return;
       }
@@ -308,9 +330,10 @@ export default function PropertyUnitsScreen() {
       setBulkPayModal(false);
       setSelectMode(false);
       setSelectedUnits(new Set());
-      Alert.alert("✅", `${inserts.length} ${t("paymentsRecorded")}`);
+      fetchData();
+      xAlert("✅", `${inserts.length} ${t("paymentsRecorded")}`);
     } catch (e: any) {
-      Alert.alert(t("error"), e.message);
+      xAlert(t("error"), e.message);
     } finally {
       setBulkSaving(false);
     }
@@ -323,7 +346,7 @@ export default function PropertyUnitsScreen() {
   }
 
   async function saveLabel() {
-    if (editUnit === null) return;
+    if (editUnit === null || !id) return;
     setSavingLabel(true);
     try {
       const unitKey = String(editUnit);
@@ -339,7 +362,7 @@ export default function PropertyUnitsScreen() {
           { onConflict: "property_id,unit_number" }
         );
         if (error) {
-          Alert.alert(t("error"), error.message);
+          xAlert(t("error"), error.message);
           return;
         }
       } else {
@@ -350,14 +373,14 @@ export default function PropertyUnitsScreen() {
           .eq("property_id", id)
           .eq("unit_number", unitKey);
         if (error) {
-          Alert.alert(t("error"), error.message);
+          xAlert(t("error"), error.message);
           return;
         }
       }
       // Re-fetch from DB to ensure label is persisted correctly
       await fetchData();
     } catch (e: any) {
-      Alert.alert(t("error"), e.message ?? "Failed to save label");
+      xAlert(t("error"), e.message ?? "Failed to save label");
     } finally {
       setSavingLabel(false);
       setEditUnit(null);

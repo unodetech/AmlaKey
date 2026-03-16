@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, Alert, I18nManager, Linking, Platform, ScrollView,
+  ActivityIndicator, I18nManager, Linking, Platform, ScrollView,
   StyleSheet, Text, TouchableOpacity, View,
 } from "react-native";
+import { showAlert, crossAlert } from "../../lib/alert";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
 import { useLanguage } from "../../context/LanguageContext";
@@ -89,7 +90,7 @@ export default function ProfileScreen() {
         } catch {}
       }
     });
-    getLastBackupDate(user?.id ?? "").then(setLastBackup);
+    if (user?.id) getLastBackupDate(user.id).then(setLastBackup);
   }, [storageKey]);
 
   useEffect(() => { loadPersonalInfo(); }, []);
@@ -106,11 +107,7 @@ export default function ProfileScreen() {
       I18nManager.forceRTL(switchingToArabic);
     }
     setTimeout(() => {
-      Alert.alert(
-        t("langChanged"),
-        t("langChangedMsg"),
-        [{ text: t("ok") }]
-      );
+      showAlert(t("langChanged"), t("langChangedMsg"));
     }, 100);
   };
 
@@ -198,7 +195,7 @@ export default function ProfileScreen() {
           }
         />
         <Divider />
-        <TouchableOpacity onPress={() => { if (!hasFeature("dark_mode")) { Alert.alert(t("upgradeRequired"), t("upgradeToUnlock"), [{ text: t("upgrade"), onPress: () => router.push("/paywall" as any) }, { text: t("later"), style: "cancel" }]); return; } toggleTheme(); }} activeOpacity={0.7} accessibilityRole="switch" accessibilityLabel={isDark ? t("darkMode") : t("lightMode")} accessibilityState={{ checked: isDark }}>
+        <TouchableOpacity onPress={() => { if (!hasFeature("dark_mode")) { crossAlert(t("upgradeRequired"), t("upgradeToUnlock"), [{ text: t("upgrade"), onPress: () => router.push("/paywall" as any) }, { text: t("later"), style: "cancel" }]); return; } toggleTheme(); }} activeOpacity={0.7} accessibilityRole="switch" accessibilityLabel={isDark ? t("darkMode") : t("lightMode")} accessibilityState={{ checked: isDark }}>
           <View style={[S.row, isRTL && S.rowRev]}>
             <View style={S.rowIconWrap}>
               <Text style={S.rowIcon}>{isDark ? "🌙" : "☀️"}</Text>
@@ -243,9 +240,9 @@ export default function ProfileScreen() {
               await exportAllData(user?.id ?? "");
               const d = await getLastBackupDate(user?.id ?? "");
               setLastBackup(d);
-              Alert.alert("✅", t("exportSuccess"));
+              showAlert("✅", t("exportSuccess"));
             } catch (e: any) {
-              Alert.alert(t("error"), e.message);
+              showAlert(t("error"), e.message);
             }
             setExporting(false);
           }}
@@ -256,7 +253,7 @@ export default function ProfileScreen() {
           label={t("restoreData")}
           right={importing ? <ActivityIndicator color={C.accent} size="small" /> : undefined}
           onPress={importing ? undefined : () => {
-            Alert.alert(
+            crossAlert(
               t("importWarning"),
               t("importConfirm"),
               [
@@ -267,13 +264,13 @@ export default function ProfileScreen() {
                     setImporting(true);
                     try {
                       const counts = await importAllData();
-                      Alert.alert("✅", t("importSuccess") + `\n\n${counts.properties} ${t("properties")}, ${counts.tenants} ${t("tenants")}, ${counts.payments} ${t("payments")}, ${counts.expenses} ${t("expenses")}`);
+                      showAlert("✅", t("importSuccess") + `\n\n${counts.properties} ${t("properties")}, ${counts.tenants} ${t("tenants")}, ${counts.payments} ${t("payments")}, ${counts.expenses} ${t("expenses")}`);
                     } catch (e: any) {
                       if (e.message === "cancelled") { /* user cancelled picker */ }
                       else if (e.message === "invalid_json" || e.message === "invalid_format") {
-                        Alert.alert(t("error"), t("invalidBackupFile"));
+                        showAlert(t("error"), t("invalidBackupFile"));
                       } else {
-                        Alert.alert(t("error"), e.message);
+                        showAlert(t("error"), e.message);
                       }
                     }
                     setImporting(false);
@@ -335,20 +332,14 @@ export default function ProfileScreen() {
         style={S.signOutBtn}
         activeOpacity={0.7}
         onPress={() => {
-          if (Platform.OS === "web") {
-            if (window.confirm(t("signOutConfirm") ?? "Are you sure you want to sign out?")) {
-              signOut();
-            }
-          } else {
-            Alert.alert(
-              t("signOut") ?? "Sign Out",
-              t("signOutConfirm") ?? "Are you sure you want to sign out?",
-              [
-                { text: t("cancel"), style: "cancel" },
-                { text: t("signOut") ?? "Sign Out", style: "destructive", onPress: signOut },
-              ]
-            );
-          }
+          crossAlert(
+            t("signOut") ?? "Sign Out",
+            t("signOutConfirm") ?? "Are you sure you want to sign out?",
+            [
+              { text: t("cancel"), style: "cancel" },
+              { text: t("signOut") ?? "Sign Out", style: "destructive", onPress: signOut },
+            ]
+          );
         }}
         accessibilityRole="button"
         accessibilityLabel={t("signOut") ?? "Sign Out"}

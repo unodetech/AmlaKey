@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Alert,
   ActivityIndicator,
   Dimensions,
   Platform,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { showAlert } from "../lib/alert";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
@@ -50,10 +50,9 @@ export default function PaywallScreen() {
 
   async function handlePurchase() {
     if (isWeb) {
-      Alert.alert(
+      showAlert(
         t("subscribePro"),
         "Subscriptions are available through the mobile app. Download Amlakey from the App Store or Google Play to subscribe.",
-        [{ text: t("ok") }]
       );
       return;
     }
@@ -64,10 +63,9 @@ export default function PaywallScreen() {
         : p.packageType === "MONTHLY"
     );
     if (!pkg) {
-      Alert.alert(
+      showAlert(
         t("subscribePro"),
         "Subscription will be available soon on the App Store.",
-        [{ text: t("ok") }]
       );
       return;
     }
@@ -75,22 +73,22 @@ export default function PaywallScreen() {
     const success = await purchasePackage(pkg);
     setPurchasing(false);
     if (success) {
-      Alert.alert("🎉", t("subscriptionActive"), [{ text: t("ok"), onPress: () => router.back() }]);
+      showAlert("🎉", t("subscriptionActive"), () => router.back());
     }
   }
 
   async function handleRestore() {
     if (isWeb) {
-      Alert.alert("ℹ️", "Restore purchases is only available on the mobile app.", [{ text: t("ok") }]);
+      showAlert("ℹ️", "Restore purchases is only available on the mobile app.");
       return;
     }
     setRestoring(true);
     const success = await restorePurchases();
     setRestoring(false);
-    Alert.alert(
+    showAlert(
       success ? "✅" : "ℹ️",
       success ? t("restoreSuccess") : t("restoreNone"),
-      [{ text: t("ok"), onPress: () => success && router.back() }]
+      success ? () => router.back() : undefined,
     );
   }
 

@@ -4,8 +4,11 @@
  * so multiple users on the same device have isolated local data.
  */
 
-/** Build a user-scoped storage key */
+/** Build a user-scoped storage key. Warns if userId is empty to help catch bugs. */
 export function userKey(userId: string, base: string): string {
+  if (__DEV__ && !userId) {
+    console.warn(`[storage] userKey called with empty userId for base key "${base}". Data may leak between users.`);
+  }
   return `${base}::${userId}`;
 }
 

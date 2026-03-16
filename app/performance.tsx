@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, Alert, ScrollView, Share, StyleSheet, Text,
+  ActivityIndicator, Platform, ScrollView, Share, StyleSheet, Text,
   TouchableOpacity, View,
 } from "react-native";
+import { crossAlert } from "../lib/alert";
 import { router, useLocalSearchParams } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { useLanguage, TKey } from "../context/LanguageContext";
@@ -464,7 +465,7 @@ export default function PerformanceScreen() {
 
   async function handleShareReport() {
     if (!hasFeature("export_reports")) {
-      Alert.alert(t("upgradeRequired"), t("upgradeToUnlock"), [
+      crossAlert(t("upgradeRequired"), t("upgradeToUnlock"), [
         { text: t("upgrade"), onPress: () => router.push("/paywall" as any) },
         { text: t("later"), style: "cancel" },
       ]);
@@ -477,7 +478,14 @@ export default function PerformanceScreen() {
       `${t("pending")}: ${(totalRevenue - totalCollected).toLocaleString()} ${t("sar")}\n` +
       `${t("overduePayments")}: ${overdueTenants.length}\n` +
       `\nAmlakey Property Manager`;
-    try { await Share.share({ message }); } catch (_) {}
+    try {
+      if (Platform.OS === "web" && navigator.clipboard) {
+        await navigator.clipboard.writeText(message);
+        window.alert("Report copied to clipboard");
+      } else {
+        await Share.share({ message });
+      }
+    } catch (_) {}
   }
 
   /* ── render ── */

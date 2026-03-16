@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView,
+  ActivityIndicator, FlatList, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from "react-native";
+import { crossAlert } from "../../lib/alert";
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../../lib/supabase";
@@ -168,9 +169,9 @@ export default function DashboardScreen() {
         .order("created_at", { ascending: false }).limit(3),
     ]);
 
-    setRevenue((activeTenants ?? []).reduce((s: number, tn: any) => s + tn.monthly_rent, 0));
-    setCollected(payData?.reduce((s, p) => s + p.amount, 0) ?? 0);
-    setExpenses(expData?.reduce((s, e) => s + e.amount, 0) ?? 0);
+    setRevenue((activeTenants ?? []).reduce((s: number, tn: any) => s + (tn.monthly_rent ?? 0), 0));
+    setCollected(payData?.reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0);
+    setExpenses(expData?.reduce((s, e) => s + (e.amount ?? 0), 0) ?? 0);
     const units = (props ?? []).reduce((s: number, p: any) => s + p.total_units, 0);
     setTotalUnits(units);
     setOccupiedUnits((activeTenants ?? []).length);
@@ -785,8 +786,9 @@ export default function DashboardScreen() {
 
       {/* ── Broadcast Message Modal ── */}
       <Modal visible={broadcastModal} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent onRequestClose={() => setBroadcastModal(false)}>
-        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)" }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-          <View style={[S.modalBox, { flex: 1, marginTop: Platform.OS === "ios" ? 56 : 40, borderTopLeftRadius: 24, borderTopRightRadius: 24 }]}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ModalOverlay style={S.broadcastOverlay} onDismiss={() => setBroadcastModal(false)}>
+          <View style={[S.modalBox, { flex: Platform.OS === "web" ? undefined : 1, maxHeight: Platform.OS === "web" ? "80%" : undefined, marginTop: Platform.OS === "web" ? 0 : Platform.OS === "ios" ? 56 : 40, borderTopLeftRadius: 24, borderTopRightRadius: 24 }]} {...webContentClickStop}>
             {/* Header */}
             <View style={[S.modalHeader, isRTL && S.rowRev]}>
               <Text style={S.modalTitle}>🔔 {t("broadcastMessage")}</Text>
@@ -898,35 +900,36 @@ export default function DashboardScreen() {
                   {broadcastSelected && (broadcastMsgType === "auto" || broadcastCustomMsg.trim().length > 0) && (
                     <TouchableOpacity
                       style={S.bcSendBtn}
-                      onPress={() => {
+                      onPress={async () => {
                         const tenant = broadcastTenants.find(bt => bt.id === broadcastSelected && bt.phone);
                         if (!tenant) return;
-                        Alert.alert(
+
+                        const doSend = async () => {
+                          const phone = tenant.phone!;
+                          const intlPhone = phone.startsWith("0") ? "966" + phone.slice(1) : phone;
+                          let message: string;
+                          if (broadcastMsgType === "custom") {
+                            message = broadcastCustomMsg.replace("%name%", tenant.name);
+                          } else if (tenant.isOverdue) {
+                            message = t("reminderMessage").replace("%name%", tenant.name).replace("%amount%", tenant.monthlyRent.toLocaleString());
+                          } else if (tenant.isExpiring) {
+                            message = t("leaseRenewalMessage").replace("%name%", tenant.name);
+                          } else {
+                            message = t("reminderMessage").replace("%name%", tenant.name).replace("%amount%", tenant.monthlyRent.toLocaleString());
+                          }
+                          const url = Platform.OS === "web"
+                            ? `https://wa.me/${intlPhone}?text=${encodeURIComponent(message)}`
+                            : `whatsapp://send?phone=${intlPhone}&text=${encodeURIComponent(message)}`;
+                          try { await Linking.openURL(url); } catch {}
+                          setBroadcastModal(false);
+                        };
+
+                        crossAlert(
                           t("broadcastMessage"),
                           t("broadcastConfirm"),
                           [
                             { text: t("cancel"), style: "cancel" },
-                            {
-                              text: t("sendViaWhatsApp"),
-                              style: "default",
-                              onPress: async () => {
-                                const phone = tenant.phone!;
-                                const intlPhone = phone.startsWith("0") ? "966" + phone.slice(1) : phone;
-                                let message: string;
-                                if (broadcastMsgType === "custom") {
-                                  message = broadcastCustomMsg.replace("%name%", tenant.name);
-                                } else if (tenant.isOverdue) {
-                                  message = t("reminderMessage").replace("%name%", tenant.name).replace("%amount%", tenant.monthlyRent.toLocaleString());
-                                } else if (tenant.isExpiring) {
-                                  message = t("leaseRenewalMessage").replace("%name%", tenant.name);
-                                } else {
-                                  message = t("reminderMessage").replace("%name%", tenant.name).replace("%amount%", tenant.monthlyRent.toLocaleString());
-                                }
-                                const url = `whatsapp://send?phone=${intlPhone}&text=${encodeURIComponent(message)}`;
-                                try { await Linking.openURL(url); } catch {}
-                                setBroadcastModal(false);
-                              },
-                            },
+                            { text: t("sendViaWhatsApp"), style: "default", onPress: doSend },
                           ]
                         );
                       }}
@@ -938,6 +941,7 @@ export default function DashboardScreen() {
               );
             })()}
           </View>
+        </ModalOverlay>
         </KeyboardAvoidingView>
       </Modal>
 
@@ -1016,6 +1020,7 @@ const styles = (C: any, shadow: any) => StyleSheet.create({
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   // Occupancy modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", ...(Platform.OS === 'web' ? { justifyContent: 'center', paddingHorizontal: 16, backdropFilter: 'blur(8px)' } as any : {}) },
+  broadcastOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end", ...(Platform.OS === 'web' ? { justifyContent: 'center', paddingHorizontal: 16, backdropFilter: 'blur(8px)' } as any : {}) },
   modalBox: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 30, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', borderRadius: 20, alignSelf: 'center', paddingBottom: spacing.lg, zIndex: 1 } : {}) },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   modalTitle: { fontSize: 18, fontWeight: "700", color: C.text },

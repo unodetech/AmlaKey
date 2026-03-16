@@ -1,8 +1,9 @@
 import React, { useMemo } from "react";
 import {
-  Alert, FlatList, I18nManager, Modal, SafeAreaView, StyleSheet,
+  FlatList, I18nManager, Modal, SafeAreaView, StyleSheet,
   Text, TouchableOpacity, View,
 } from "react-native";
+import { crossAlert } from "../lib/alert";
 import { useNotification, NotificationItem, NotificationType } from "../context/NotificationContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
@@ -64,7 +65,7 @@ export function NotificationCenter({ visible, onClose }: Props) {
   }, [notifications, t]);
 
   const handleClear = () => {
-    Alert.alert(t("clearAllNotifications"), t("clearAllConfirm"), [
+    crossAlert(t("clearAllNotifications"), t("clearAllConfirm"), [
       { text: t("cancel"), style: "cancel" },
       { text: t("clearAllNotifications"), style: "destructive", onPress: clearAll },
     ]);
