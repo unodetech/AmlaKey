@@ -337,7 +337,8 @@ export default function PropertiesScreen() {
   }, [properties, searchQuery]);
 
   const totalUnits = properties.reduce((s, p) => s + p.total_units, 0);
-  const totalIncome = properties.reduce((s, p) => s + (tenantIncomeByProp[p.id] ?? 0), 0);
+  const getAnnualIncome = (p: Property) => p.monthly_income ? p.monthly_income : (tenantIncomeByProp[p.id] ?? 0) * 12;
+  const totalIncome = properties.reduce((s, p) => s + getAnnualIncome(p), 0);
 
   if (isWeb) {
     return renderContent();
@@ -384,7 +385,7 @@ export default function PropertiesScreen() {
           {[
             { val: properties.length, lbl: t("properties") },
             { val: totalUnits, lbl: t("totalUnits") },
-            { val: (totalIncome * 12).toLocaleString(), lbl: `${t("sar")}/${t("perYear")}` },
+            { val: totalIncome.toLocaleString(), lbl: `${t("sar")}/${t("perYear")}` },
           ].map((item) => (
             <View key={item.lbl} style={S.summaryCard}>
               <Text style={S.summaryVal}>{item.val}</Text>
@@ -437,7 +438,7 @@ export default function PropertiesScreen() {
                     params: { name: p.name, total_units: p.total_units, type: p.type },
                   })}
                   accessibilityRole="button"
-                  accessibilityLabel={`${p.name}, ${t(p.type as any)}, ${p.total_units} ${t("units")}, ${((tenantIncomeByProp[p.id] ?? 0) * 12).toLocaleString()} ${t("sar")}/${t("perYear")}`}
+                  accessibilityLabel={`${p.name}, ${t(p.type as any)}, ${p.total_units} ${t("units")}, ${getAnnualIncome(p).toLocaleString()} ${t("sar")}/${t("perYear")}`}
                   accessibilityHint={t("tapToViewUnits")}
                 >
                   <View style={[S.cardHeader, isRTL && S.rowRev]}>
@@ -469,7 +470,7 @@ export default function PropertiesScreen() {
                   <View style={[S.cardStats, isRTL && S.rowRev]}>
                     <Text style={S.statText}>🏠 {p.total_units} {t("units")}</Text>
                     <Text style={S.statText}>🏗 {p.floors} {t("floors")}</Text>
-                    <Text style={S.incomeText}>{((tenantIncomeByProp[p.id] ?? 0) * 12).toLocaleString()} {t("sar")}/${t("perYear")}</Text>
+                    <Text style={S.incomeText}>{getAnnualIncome(p).toLocaleString()} {t("sar")}/${t("perYear")}</Text>
                   </View>
                   <Text style={[S.viewHint, isRTL && { textAlign: "right" }, { marginTop: 8 }]}>
                     {isRTL ? `‹ ${t("tapToViewUnits")}` : `${t("tapToViewUnits")} ›`}
