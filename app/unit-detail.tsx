@@ -288,14 +288,16 @@ export default function UnitDetailScreen() {
     if (!form.lease_start) {
       errors.leaseStart = t("leaseStartRequired");
     }
-    if (form.lease_start && form.lease_end && form.lease_end < form.lease_start) {
+    if (!form.lease_end) {
+      errors.leaseEnd = t("leaseEndRequired");
+    } else if (form.lease_start && form.lease_end < form.lease_start) {
       errors.leaseEnd = t("validationLeaseEndBeforeStart");
     }
     setAddErrors(errors);
     if (Object.keys(errors).length > 0) return;
     setSaving(true);
     try {
-      const leaseEnd = form.lease_end || form.lease_start;
+      const leaseEnd = form.lease_end;
       const status =
         leaseEnd && leaseEnd < new Date().toISOString().split("T")[0]
           ? "expired"
@@ -541,14 +543,16 @@ export default function UnitDetailScreen() {
     if (!editTenantForm.lease_start) {
       errors.leaseStart = t("leaseStartRequired");
     }
-    if (editTenantForm.lease_start && editTenantForm.lease_end && editTenantForm.lease_end < editTenantForm.lease_start) {
+    if (!editTenantForm.lease_end) {
+      errors.leaseEnd = t("leaseEndRequired");
+    } else if (editTenantForm.lease_start && editTenantForm.lease_end < editTenantForm.lease_start) {
       errors.leaseEnd = t("validationLeaseEndBeforeStart");
     }
     setEditErrors(errors);
     if (Object.keys(errors).length > 0) return;
     setSavingEditTenant(true);
     try {
-      const leaseEnd = editTenantForm.lease_end || null;
+      const leaseEnd = editTenantForm.lease_end;
       const status = leaseEnd && leaseEnd < new Date().toISOString().split("T")[0] ? "expired" : "active";
       const { error } = await supabase.from("tenants").update({
         name: editTenantForm.name.trim(),

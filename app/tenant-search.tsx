@@ -181,8 +181,12 @@ export default function TenantSearchScreen() {
       showAlert(t("error"), t("nameRequired"));
       return;
     }
+    if (!editForm.lease_end) {
+      showAlert(t("error"), t("leaseEndRequired"));
+      return;
+    }
     setEditSaving(true);
-    const leaseEnd = editForm.lease_end || editForm.lease_start;
+    const leaseEnd = editForm.lease_end;
     const status = leaseEnd && leaseEnd < new Date().toISOString().split("T")[0] ? "expired" : editForm.status;
     const { error } = await supabase.from("tenants").update({
       name: editForm.name.trim(),

@@ -500,6 +500,10 @@ true;
       showAlert(t("error"), t("leaseStartRequired"));
       return;
     }
+    if (!editForm.lease_end.trim()) {
+      showAlert(t("error"), t("leaseEndRequired"));
+      return;
+    }
     setEditSaving(true);
     const { error } = await supabase.from("tenants").update({
       name: editForm.name.trim(),

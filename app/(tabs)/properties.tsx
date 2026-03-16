@@ -111,6 +111,7 @@ export default function PropertiesScreen() {
 
   const [addPropErrors, setAddPropErrors] = useState<Record<string, string>>({});
   const [editPropErrors, setEditPropErrors] = useState<Record<string, string>>({});
+  const [tenantIncomeByProp, setTenantIncomeByProp] = useState<Record<string, number>>({});
 
   const [defaultCity, setDefaultCity] = useState("alkharj");
 
@@ -183,8 +184,17 @@ export default function PropertiesScreen() {
 
   async function fetchProperties() {
     setLoading(true);
-    const { data } = await supabase.from("properties").select("*").order("created_at", { ascending: false });
-    if (data) setProperties(data);
+    const [{ data: propData }, { data: tenantData }] = await Promise.all([
+      supabase.from("properties").select("*").order("created_at", { ascending: false }),
+      supabase.from("tenants").select("property_id, monthly_rent").eq("status", "active"),
+    ]);
+    if (propData) setProperties(propData);
+    // Build income map from active tenant rents
+    const incMap: Record<string, number> = {};
+    for (const tn of (tenantData ?? [])) {
+      incMap[tn.property_id] = (incMap[tn.property_id] ?? 0) + (tn.monthly_rent ?? 0);
+    }
+    setTenantIncomeByProp(incMap);
     setLoading(false);
   }
 
@@ -327,7 +337,7 @@ export default function PropertiesScreen() {
   }, [properties, searchQuery]);
 
   const totalUnits = properties.reduce((s, p) => s + p.total_units, 0);
-  const totalIncome = properties.reduce((s, p) => s + p.monthly_income, 0);
+  const totalIncome = properties.reduce((s, p) => s + (tenantIncomeByProp[p.id] ?? 0), 0);
 
   if (isWeb) {
     return renderContent();
@@ -427,7 +437,7 @@ export default function PropertiesScreen() {
                     params: { name: p.name, total_units: p.total_units, type: p.type },
                   })}
                   accessibilityRole="button"
-                  accessibilityLabel={`${p.name}, ${t(p.type as any)}, ${p.total_units} ${t("units")}, ${p.monthly_income.toLocaleString()} ${t("sar")}`}
+                  accessibilityLabel={`${p.name}, ${t(p.type as any)}, ${p.total_units} ${t("units")}, ${(tenantIncomeByProp[p.id] ?? 0).toLocaleString()} ${t("sar")}`}
                   accessibilityHint={t("tapToViewUnits")}
                 >
                   <View style={[S.cardHeader, isRTL && S.rowRev]}>
@@ -459,7 +469,7 @@ export default function PropertiesScreen() {
                   <View style={[S.cardStats, isRTL && S.rowRev]}>
                     <Text style={S.statText}>🏠 {p.total_units} {t("units")}</Text>
                     <Text style={S.statText}>🏗 {p.floors} {t("floors")}</Text>
-                    <Text style={S.incomeText}>{p.monthly_income.toLocaleString()} {t("sar")}</Text>
+                    <Text style={S.incomeText}>{(tenantIncomeByProp[p.id] ?? 0).toLocaleString()} {t("sar")}</Text>
                   </View>
                   <Text style={[S.viewHint, isRTL && { textAlign: "right" }, { marginTop: 8 }]}>
                     {isRTL ? `‹ ${t("tapToViewUnits")}` : `${t("tapToViewUnits")} ›`}

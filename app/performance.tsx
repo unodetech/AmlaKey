@@ -128,31 +128,36 @@ export default function PerformanceScreen() {
     setPayments(pays ?? []);
     setExpensesData(exps ?? []);
 
-    // Overdue computation — only fully paid tenants are excluded
+    // Overdue computation — uses selected month filter
     {
-      const thisMonth = new Date().toISOString().slice(0, 7);
-      const { data: monthPays } = await supabase.from("payments").select("tenant_id, amount").eq("month_year", thisMonth);
+      const targetMonth = monthYears[0]; // e.g. "2026-03"
+      const { data: monthPays } = await supabase.from("payments").select("tenant_id, amount").eq("month_year", targetMonth);
       const paidByTenantMap = new Map<string, number>();
       for (const p of (monthPays ?? [])) {
         paidByTenantMap.set(p.tenant_id, (paidByTenantMap.get(p.tenant_id) ?? 0) + (p.amount ?? 0));
       }
       const today = new Date();
       const currentDay = today.getDate();
+      const selectedYear = new Date().getFullYear();
+      const selectedMonthNum = selectedMonth; // 1-based
+      const isCurrentMonth = today.getFullYear() === selectedYear && (today.getMonth() + 1) === selectedMonthNum;
+      // For past months, treat as end-of-month (day 31); for current month, use today's date
+      const effectiveDay = isCurrentMonth ? currentDay : 31;
       const list = (tenants ?? [])
         .filter((tn: any) => {
           if (!tn.lease_start) return false;
-          if (!isPaymentDueInMonth(tn.lease_start, tn.lease_end, tn.payment_frequency, thisMonth)) return false;
+          if (!isPaymentDueInMonth(tn.lease_start, tn.lease_end, tn.payment_frequency, targetMonth)) return false;
           const dueDay = new Date(tn.lease_start + "T12:00:00").getDate();
           const totalPaid = paidByTenantMap.get(tn.id) ?? 0;
-          const dueAmount = amountDueInMonth(tn, thisMonth);
-          return currentDay >= dueDay && totalPaid < dueAmount;
+          const dueAmount = amountDueInMonth(tn, targetMonth);
+          return effectiveDay >= dueDay && totalPaid < dueAmount;
         })
         .map((tn: any) => {
           const dueDay = new Date(tn.lease_start + "T12:00:00").getDate();
           const totalPaid = paidByTenantMap.get(tn.id) ?? 0;
-          const dueAmount = amountDueInMonth(tn, thisMonth);
+          const dueAmount = amountDueInMonth(tn, targetMonth);
           const overdueAmount = dueAmount - totalPaid;
-          return { ...tn, dueDay, daysOverdue: currentDay - dueDay, overdueAmount };
+          return { ...tn, dueDay, daysOverdue: effectiveDay - dueDay, overdueAmount };
         })
         .sort((a: any, b: any) => b.daysOverdue - a.daysOverdue);
       setOverdueTenants(list);

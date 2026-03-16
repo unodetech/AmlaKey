@@ -28,17 +28,16 @@ if (!isWeb) {
   Asset = require("expo-asset").Asset;
 }
 
-type TimePeriod = "thisMonth" | "lastMonth" | "last3Months" | "last6Months" | "thisYear" | "allTime";
 type ReportType = "revenue" | "expenses" | "full";
 
-const TIME_PERIODS: { key: TimePeriod; labelKey: TKey }[] = [
-  { key: "thisMonth", labelKey: "thisMonth" },
-  { key: "lastMonth", labelKey: "lastMonth" },
-  { key: "last3Months", labelKey: "last3Months" },
-  { key: "last6Months", labelKey: "last6Months" },
-  { key: "thisYear", labelKey: "thisYear" },
-  { key: "allTime", labelKey: "allTime" },
-];
+/** Build month labels from JS Intl so we get localised names for free */
+function getMonthLabels(lang: string): { month: number; label: string }[] {
+  const locale = lang === "ar" ? "ar-SA-u-ca-gregory" : "en-US";
+  return Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    label: new Date(2026, i, 1).toLocaleDateString(locale, { month: "long" }),
+  }));
+}
 
 const REPORT_TYPES: { key: ReportType; labelKey: TKey; icon: string; color: string }[] = [
   { key: "revenue", labelKey: "revenueReport", icon: "📈", color: "#22C55E" },
@@ -46,26 +45,25 @@ const REPORT_TYPES: { key: ReportType; labelKey: TKey; icon: string; color: stri
   { key: "full", labelKey: "fullReport", icon: "📊", color: "#0EA5E9" },
 ];
 
-function getDateRange(period: TimePeriod) {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  let start: Date;
-  let end = new Date(y, m + 1, 0);
-  switch (period) {
-    case "thisMonth": start = new Date(y, m, 1); break;
-    case "lastMonth": start = new Date(y, m - 1, 1); end = new Date(y, m, 0); break;
-    case "last3Months": start = new Date(y, m - 2, 1); break;
-    case "last6Months": start = new Date(y, m - 5, 1); break;
-    case "thisYear": start = new Date(y, 0, 1); break;
-    case "allTime": start = new Date(2020, 0, 1); break;
-  }
-  const monthCount = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
+function getDateRange(monthIndex: number) {
+  const y = new Date().getFullYear();
+  const m = monthIndex - 1; // 0-based
+  const end = new Date(y, m + 1, 0);
+  const monthYear = `${y}-${String(monthIndex).padStart(2, "0")}`;
   return {
-    startDate: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`,
-    endDate: `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`,
-    monthCount,
+    startDate: `${y}-${String(monthIndex).padStart(2, "0")}-01`,
+    endDate: `${y}-${String(monthIndex).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`,
+    monthYear,
   };
+}
+
+/** Amount due from a tenant in a given month — matches dashboard logic */
+function amountDueInMonth(tn: any, monthStr: string): number {
+  if (!tn.lease_start || !tn.monthly_rent) return 0;
+  if (!isPaymentDueInMonth(tn.lease_start, tn.lease_end, tn.payment_frequency, monthStr)) return 0;
+  const rent = tn.monthly_rent ?? 0;
+  if (tn.payment_frequency === "semi_annual") return rent / 2;
+  return rent;
 }
 
 interface ReportData {
@@ -86,18 +84,18 @@ export default function ReportsScreen() {
   const insets = useSafeAreaInsets();
   const S = useMemo(() => styles(C, shadow), [C, shadow]);
 
-  const [period, setPeriod] = useState<TimePeriod>("thisMonth");
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [reportType, setReportType] = useState<ReportType>("full");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ReportData | null>(null);
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => { fetchData(); }, [period]);
+  useEffect(() => { fetchData(); }, [selectedMonth]);
 
   async function fetchData() {
     setLoading(true);
     try {
-      const { startDate, endDate, monthCount } = getDateRange(period);
+      const { startDate, endDate, monthYear } = getDateRange(selectedMonth);
       const [{ data: props }, { data: payments }, { data: expenses }, { data: tenants }] = await Promise.all([
         supabase.from("properties").select("id, name"),
         supabase.from("payments").select("*").gte("payment_date", startDate).lte("payment_date", endDate),
@@ -108,16 +106,10 @@ export default function ReportsScreen() {
       const allPayments = payments || [];
       const allExpenses = expenses || [];
       const allTenants = tenants || [];
-      // Calculate revenue per month, respecting lease period and payment frequency
-      const periodStart = new Date(startDate + "T00:00:00");
-      let totalRevenue = 0;
-      for (let mi = 0; mi < monthCount; mi++) {
-        const mStart = new Date(periodStart.getFullYear(), periodStart.getMonth() + mi, 1);
-        const my = `${mStart.getFullYear()}-${String(mStart.getMonth() + 1).padStart(2, "0")}`;
-        totalRevenue += allTenants
-          .filter((t: any) => isPaymentDueInMonth(t.lease_start, t.lease_end, t.payment_frequency, my))
-          .reduce((s: number, t: any) => s + (t.monthly_rent || 0), 0);
-      }
+      // Calculate revenue for selected month, respecting lease period and payment frequency
+      const totalRevenue = allTenants.reduce(
+        (s: number, tn: any) => s + amountDueInMonth(tn, monthYear), 0
+      );
       const totalCollected = allPayments.reduce((s: number, p: any) => s + (p.amount || 0), 0);
       const totalExp = allExpenses.reduce((s: number, e: any) => s + (e.amount || 0), 0);
 
@@ -142,7 +134,7 @@ export default function ReportsScreen() {
     if (!data) return "";
     const lines: string[] = [];
     const header = t("reportTitle");
-    const periodLabel = t(TIME_PERIODS.find(p => p.key === period)!.labelKey);
+    const periodLabel = getMonthLabels(lang).find(ml => ml.month === selectedMonth)?.label ?? "";
 
     lines.push(`${header} - ${periodLabel}`);
     lines.push("");
@@ -193,7 +185,7 @@ export default function ReportsScreen() {
     setExporting(true);
     try {
       const wb = XLSX.utils.book_new();
-      const periodLabel = t(TIME_PERIODS.find(p => p.key === period)!.labelKey);
+      const periodLabel = getMonthLabels(lang).find(ml => ml.month === selectedMonth)?.label ?? "";
       const reportDate = new Date().toLocaleDateString(lang === "ar" ? "ar-SA" : "en-US", { month: "long", year: "numeric" });
 
       if (reportType === "revenue" || reportType === "full") {
@@ -245,11 +237,11 @@ export default function ReportsScreen() {
 
       if (isWeb) {
         // Web: use XLSX.writeFile which triggers browser download
-        const filename = `amlakey_report_${period}_${Date.now()}.xlsx`;
+        const filename = `amlakey_report_${selectedMonth}_${Date.now()}.xlsx`;
         XLSX.writeFile(wb, filename);
       } else {
         const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
-        const filename = `amlakey_report_${period}_${Date.now()}.xlsx`;
+        const filename = `amlakey_report_${selectedMonth}_${Date.now()}.xlsx`;
         const path = `${FileSystem!.cacheDirectory}${filename}`;
         await FileSystem!.writeAsStringAsync(path, wbout, { encoding: FileSystem!.EncodingType.Base64 });
         await Sharing!.shareAsync(path, {
@@ -265,7 +257,7 @@ export default function ReportsScreen() {
 
   function buildHTML(logoBase64?: string): string {
     if (!data) return "";
-    const periodLabel = t(TIME_PERIODS.find(p => p.key === period)!.labelKey);
+    const periodLabel = getMonthLabels(lang).find(ml => ml.month === selectedMonth)?.label ?? "";
     const dir = isRTL ? "rtl" : "ltr";
     const align = isRTL ? "right" : "left";
 
@@ -422,18 +414,18 @@ export default function ReportsScreen() {
           })}
         </View>
 
-        {/* Time period pills */}
+        {/* Month filter pills */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
           <View style={[S.pillRow, isRTL && S.rowRev]}>
-            {TIME_PERIODS.map(tp => {
-              const active = period === tp.key;
+            {getMonthLabels(lang).map(ml => {
+              const active = selectedMonth === ml.month;
               return (
                 <TouchableOpacity
-                  key={tp.key}
+                  key={ml.month}
                   style={[S.pill, active && S.pillActive]}
-                  onPress={() => setPeriod(tp.key)}
+                  onPress={() => setSelectedMonth(ml.month)}
                 >
-                  <Text style={[S.pillText, active && S.pillTextActive]}>{t(tp.labelKey)}</Text>
+                  <Text style={[S.pillText, active && S.pillTextActive]}>{ml.label}</Text>
                 </TouchableOpacity>
               );
             })}
