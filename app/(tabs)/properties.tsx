@@ -446,16 +446,6 @@ export default function PropertiesScreen() {
                     <View style={{ flex: 1, marginHorizontal: 8 }}>
                       <Text style={[S.cardName, isRTL && { textAlign: "right" }, isDesktop && { fontSize: 16 }]}>{p.name}</Text>
                       <Text style={[S.cardCity, isRTL && { textAlign: "right" }]}>{p.city}</Text>
-                    {isWeb && (
-                      <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }} {...{ onClick: (e: any) => e.stopPropagation() } as any}>
-                        <TouchableOpacity onPress={() => openEdit(p)} style={S.webActionBtn} accessibilityRole="button" accessibilityLabel={t("edit")}>
-                          <Text style={S.webActionBtnText}>✏️ {t("edit")}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => confirmDelete(p)} style={[S.webActionBtn, S.webDeleteBtn]} accessibilityRole="button" accessibilityLabel={t("delete")}>
-                          <Text style={S.webDeleteBtnText}>🗑️ {t("delete")}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
                       {!!p.notes && (
                         <Text style={[S.cardNotes, isRTL && { textAlign: "right" }]} numberOfLines={1}>
                           📝 {p.notes}
@@ -470,7 +460,7 @@ export default function PropertiesScreen() {
                   <View style={[S.cardStats, isRTL && S.rowRev]}>
                     <Text style={S.statText}>🏠 {p.total_units} {t("units")}</Text>
                     <Text style={S.statText}>🏗 {p.floors} {t("floors")}</Text>
-                    <Text style={S.incomeText}>{getAnnualIncome(p).toLocaleString()} {t("sar")}/${t("perYear")}</Text>
+                    <Text style={S.incomeText}>{getAnnualIncome(p).toLocaleString()} {t("sar")}/{t("perYear")}</Text>
                   </View>
                   <Text style={[S.viewHint, isRTL && { textAlign: "right" }, { marginTop: 8 }]}>
                     {isRTL ? `‹ ${t("tapToViewUnits")}` : `${t("tapToViewUnits")} ›`}
