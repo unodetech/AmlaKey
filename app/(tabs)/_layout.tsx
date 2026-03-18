@@ -38,7 +38,7 @@ function DesktopSidebar({ state, descriptors, navigation, collapsed, onToggle }:
       ]}
     >
       {/* App logo + collapse toggle */}
-      <View style={[sidebarStyles.logoRow, collapsed && { justifyContent: "center", paddingHorizontal: 0 }]}>
+      <View style={[sidebarStyles.logoRow, { flexDirection: isRTL ? "row-reverse" : "row" }, collapsed && { justifyContent: "center", paddingHorizontal: 0 }]}>
         {collapsed ? (
           <Pressable onPress={onToggle} accessibilityRole="button" accessibilityLabel="Expand sidebar">
             <Image
@@ -51,10 +51,10 @@ function DesktopSidebar({ state, descriptors, navigation, collapsed, onToggle }:
           <>
             <Image
               source={require("../../assets/images/splash-icon.png")}
-              style={sidebarStyles.logo}
+              style={[sidebarStyles.logo, { marginRight: isRTL ? 0 : 10, marginLeft: isRTL ? 10 : 0 }]}
               resizeMode="contain"
             />
-            <Text style={[sidebarStyles.logoText, { color: colors.text, flex: 1 }]}>
+            <Text style={[sidebarStyles.logoText, { color: colors.text, flex: 1, textAlign: isRTL ? "right" : "left" }]}>
               {isRTL ? "أملاكي" : "Amlakey"}
             </Text>
             <Pressable onPress={onToggle} accessibilityRole="button" accessibilityLabel="Collapse sidebar">
@@ -173,7 +173,6 @@ const sidebarStyles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 10,
-    marginRight: 10,
   },
   logoText: {
     fontSize: 20,
