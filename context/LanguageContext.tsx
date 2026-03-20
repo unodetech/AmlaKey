@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { I18nManager, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Updates from "expo-updates";
+import { getLocales } from "expo-localization";
 
 type Language = "en" | "ar";
 
@@ -1207,7 +1208,21 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     AsyncStorage.getItem("@lang").then((v) => {
-      if (v === "en" || v === "ar") setLang(v);
+      if (v === "en" || v === "ar") {
+        setLang(v);
+      } else {
+        // First launch — detect device locale, default to Arabic
+        try {
+          const locales = getLocales();
+          const deviceLang = locales?.[0]?.languageCode;
+          const detected: Language = deviceLang === "en" ? "en" : "ar";
+          setLang(detected);
+          AsyncStorage.setItem("@lang", detected).catch(() => {});
+        } catch {
+          // Fallback to Arabic (default)
+          AsyncStorage.setItem("@lang", "ar").catch(() => {});
+        }
+      }
     }).catch(() => {});
   }, []);
 
@@ -1227,8 +1242,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       I18nManager.allowRTL(next === "ar");
       I18nManager.forceRTL(next === "ar");
       // I18nManager changes require a reload to take effect
-      if (!__DEV__) {
+      try {
         await Updates.reloadAsync();
+      } catch {
+        // In dev mode, reloadAsync may not work — that's OK
       }
     }
   };
