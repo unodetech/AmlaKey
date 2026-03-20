@@ -92,11 +92,8 @@
       }
     },
     "owner": "yousef7161",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
     "updates": {
-      "url": "https://u.expo.dev/89e0b67b-e1fc-43be-b7bc-8b0016285259"
+      "enabled": false
     }
   }
 }

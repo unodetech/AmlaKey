@@ -102,26 +102,19 @@ function RootNavigator() {
       });
   }, [session, loading]);
 
-  // Sync RTL direction: on web update document dir, on native restart if mismatch
+  // Sync RTL direction: on web update document dir, on native update I18nManager
   useEffect(() => {
     if (isWeb) {
-      document.documentElement.dir = isRTL ? "rtl" : "ltr";
-      document.documentElement.lang = isRTL ? "ar" : "en";
+      if (typeof document !== "undefined") {
+        document.documentElement.dir = isRTL ? "rtl" : "ltr";
+        document.documentElement.lang = isRTL ? "ar" : "en";
+      }
       return;
     }
     if (I18nManager.isRTL !== isRTL) {
       I18nManager.allowRTL(isRTL);
       I18nManager.forceRTL(isRTL);
-      // Restart app to apply new RTL direction
-      try {
-        import("expo-updates").then(({ reloadAsync }) => {
-          reloadAsync().catch(() => {
-            // In dev mode, reloadAsync may not work — that's OK
-          });
-        }).catch(() => {});
-      } catch {
-        // Dev mode fallback — reloadAsync not available
-      }
+      // Note: RTL change takes effect on next app restart
     }
   }, [isRTL]);
 
