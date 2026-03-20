@@ -212,6 +212,19 @@ export default function ExpensesScreen() {
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [syncing, setSyncing] = useState(false);
   const hasSyncedOnMount = useRef(false);
+  // Track bill_refs that the user explicitly deleted so sync doesn't re-create them
+  const dismissedBillRefs = useRef<Set<string>>(new Set());
+  const DISMISSED_KEY = uid ? userKey(uid, "dismissed_bills") : "";
+
+  // Load dismissed bill refs from storage on mount
+  useEffect(() => {
+    if (!DISMISSED_KEY) return;
+    AsyncStorage.getItem(DISMISSED_KEY).then((v) => {
+      if (v) {
+        try { dismissedBillRefs.current = new Set(JSON.parse(v)); } catch {}
+      }
+    }).catch(() => {});
+  }, [DISMISSED_KEY]);
 
   useFocusEffect(useCallback(() => {
     fetchAll();
@@ -287,6 +300,8 @@ export default function ExpensesScreen() {
       for (const acc of allAccounts) {
         try {
           const billRef = generateBillRef(acc.type, acc.accountNumber);
+          // Skip bills the user explicitly deleted this session
+          if (dismissedBillRefs.current.has(billRef)) continue;
           let amount = 0;
           let dueAmount = 0;
           const billPeriod = isRTL
@@ -604,6 +619,13 @@ export default function ExpensesScreen() {
       if (isWeb) window.alert(error.message);
       else showAlert(t("error"), error.message);
     } else {
+      // If this was a utility bill, remember the bill_ref so sync won't re-create it
+      if (exp.bill_ref) {
+        dismissedBillRefs.current.add(exp.bill_ref);
+        if (DISMISSED_KEY) {
+          AsyncStorage.setItem(DISMISSED_KEY, JSON.stringify([...dismissedBillRefs.current])).catch(() => {});
+        }
+      }
       fetchAll();
     }
   }
