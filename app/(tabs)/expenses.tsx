@@ -960,8 +960,8 @@ export default function ExpensesScreen() {
             </View>
 
             {/* Filter */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.filterScroll}>
-              <View style={[S.filterRow, isRTL && S.rowRev]}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[S.filterScroll, isRTL && { paddingLeft: 0, paddingRight: spacing.md }]}>
+              <View style={[S.filterRow, isRTL && S.rowRev, isRTL && { paddingRight: 0, paddingLeft: spacing.md }]}>
                 <TouchableOpacity
                   style={[S.filterTab, filterCategory === "all" && S.filterTabActive]}
                   onPress={() => setFilterCategory("all")}

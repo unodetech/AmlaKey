@@ -460,7 +460,7 @@ const styles = (C: any, shadow: any, isDark: boolean, isRTL: boolean) =>
       paddingVertical: 10,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: C.border,
-      marginLeft: 0,
+      [isRTL ? "marginRight" : "marginLeft"]: 0,
     },
 
     // ── Sign Out ──

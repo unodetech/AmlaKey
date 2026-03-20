@@ -738,6 +738,7 @@ export default function UnitDetailScreen() {
             <Text style={S.infoValue}>
               {tenant.payment_frequency === "annual" ? t("annual") :
                tenant.payment_frequency === "semi_annual" ? t("semiAnnual") :
+               tenant.payment_frequency === "quarterly" ? t("quarterly") :
                t("monthly")}
             </Text>
           </View>
