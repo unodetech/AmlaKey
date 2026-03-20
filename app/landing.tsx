@@ -211,7 +211,7 @@ export default function LandingPage() {
               { end: 500, suffix: "+", label: t("landingStatsProperties" as any) },
               { end: 10000, suffix: "+", label: t("landingStatsTransactions" as any) },
               { end: 99.9, suffix: "%", label: t("landingStatsUptime" as any) },
-              { end: 3, suffix: "", label: t("landingStatsPlatforms" as any) },
+              { end: 2, suffix: "", label: t("landingStatsPlatforms" as any) },
             ].map((stat, i) => (
               <View key={i} style={[s.statItem, { width: isDesktop ? "25%" : "50%" }]}>
                 <AnimatedCounter end={stat.end} suffix={stat.suffix} />
