@@ -212,26 +212,8 @@ export default function ExpensesScreen() {
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [syncing, setSyncing] = useState(false);
   const hasSyncedOnMount = useRef(false);
-  // Track bill_refs that the user explicitly deleted so sync doesn't re-create them
-  const dismissedBillRefs = useRef<Set<string>>(new Set());
-  const dismissedLoaded = useRef(false);
-  const DISMISSED_KEY = uid ? userKey(uid, "dismissed_bills") : "";
-
-  // Load dismissed bill refs from storage on mount
-  useEffect(() => {
-    if (!DISMISSED_KEY) {
-      dismissedLoaded.current = true;
-      return;
-    }
-    AsyncStorage.getItem(DISMISSED_KEY).then((v) => {
-      if (v) {
-        try { dismissedBillRefs.current = new Set(JSON.parse(v)); } catch {}
-      }
-      dismissedLoaded.current = true;
-    }).catch(() => {
-      dismissedLoaded.current = true;
-    });
-  }, [DISMISSED_KEY]);
+  // Bill dismissal is now handled via Supabase soft-delete (bill_ref prefixed with "dismissed_")
+  // No AsyncStorage tracking needed — works across all devices
 
   useFocusEffect(useCallback(() => {
     fetchAll();
@@ -249,7 +231,8 @@ export default function ExpensesScreen() {
       supabase.from("expenses").select("*, properties(name)").order("date", { ascending: false }),
       supabase.from("properties").select("id, name, sec_account, nwc_account, has_multiple_sec, has_multiple_nwc, total_units"),
     ]);
-    if (eData) setExpenses(eData as Expense[]);
+    // Filter out soft-deleted utility bills (bill_ref starts with "dismissed_")
+    if (eData) setExpenses((eData as Expense[]).filter(e => !e.bill_ref?.startsWith("dismissed_")));
     if (pData) setProperties(pData);
     setLoading(false);
   }
@@ -259,12 +242,6 @@ export default function ExpensesScreen() {
     if (syncing) return;
     setSyncing(true);
     try {
-      // Wait for dismissed refs to load (max 2s)
-      let waited = 0;
-      while (!dismissedLoaded.current && waited < 2000) {
-        await new Promise(r => setTimeout(r, 100));
-        waited += 100;
-      }
       // Load all properties with their accounts
       const { data: props } = await supabase
         .from("properties")
@@ -313,8 +290,6 @@ export default function ExpensesScreen() {
       for (const acc of allAccounts) {
         try {
           const billRef = generateBillRef(acc.type, acc.accountNumber);
-          // Skip bills the user explicitly deleted this session
-          if (dismissedBillRefs.current.has(billRef)) continue;
           let amount = 0;
           let dueAmount = 0;
           const billPeriod = isRTL
@@ -339,25 +314,24 @@ export default function ExpensesScreen() {
 
           const isBillPaid = dueAmount === 0;
 
-          // Check existing
-          const { data: existing } = await supabase
-            .from("expenses").select("id, amount")
-            .eq("bill_ref", billRef).maybeSingle();
+          // Check if this bill exists (active or dismissed)
+          const [{ data: existing }, { data: dismissed }] = await Promise.all([
+            supabase.from("expenses").select("id, amount")
+              .eq("bill_ref", billRef).maybeSingle(),
+            supabase.from("expenses").select("id")
+              .eq("bill_ref", `dismissed_${billRef}`).maybeSingle(),
+          ]);
+
+          // User explicitly dismissed this bill — never re-create
+          if (dismissed) continue;
 
           if (isBillPaid) {
             if (existing) {
-              // Bill is paid — mark existing expense as paid
               await supabase.from("expenses")
                 .update({ bill_paid: true })
                 .eq("id", existing.id);
-            } else {
-              // Bill is paid but record was deleted — re-create it as paid
-              await supabase.from("expenses").insert([{
-                category: acc.type === "sec" ? "electricity" : "water",
-                amount, date: today, description: desc,
-                property_id: acc.propertyId, bill_ref: billRef, bill_paid: true,
-              }]);
             }
+            // If no existing and bill is paid, don't create — nothing to charge
             continue;
           }
 
@@ -571,12 +545,28 @@ export default function ExpensesScreen() {
 
       const today = new Date().toISOString().split("T")[0];
 
-      // Check if bill already exists for this ref
-      const { data: existing } = await supabase
-        .from("expenses")
-        .select("id, amount")
-        .eq("bill_ref", billRef)
-        .maybeSingle();
+      // Check if bill already exists (active or dismissed)
+      const [{ data: existing }, { data: dismissed }] = await Promise.all([
+        supabase.from("expenses").select("id, amount")
+          .eq("bill_ref", billRef).maybeSingle(),
+        supabase.from("expenses").select("id")
+          .eq("bill_ref", `dismissed_${billRef}`).maybeSingle(),
+      ]);
+
+      if (dismissed) {
+        // User previously dismissed this bill — remove the dismissal and re-fetch
+        await supabase.from("expenses")
+          .update({ bill_ref: billRef, amount, description: desc, bill_paid: false })
+          .eq("id", dismissed.id);
+
+        setIntegrationAccounts((prev) =>
+          prev.map((a, i) =>
+            i === index ? { ...a, status: "success", billAmount: amount, billPaid: false } : a
+          )
+        );
+        fetchAll();
+        return;
+      }
 
       if (existing) {
         // Update existing bill
@@ -585,7 +575,6 @@ export default function ExpensesScreen() {
           .eq("id", existing.id);
         if (error) throw error;
 
-        // Show "updated" status on the row instead of popup
         setIntegrationAccounts((prev) =>
           prev.map((a, i) =>
             i === index ? { ...a, status: "updated", billAmount: amount, billPaid: false } : a
@@ -627,20 +616,27 @@ export default function ExpensesScreen() {
   }
 
   async function confirmDeleteExpense(exp: Expense) {
-    const { error } = await supabase.from("expenses").delete().eq("id", exp.id);
-    if (error) {
-      if (isWeb) window.alert(error.message);
-      else showAlert(t("error"), error.message);
-    } else {
-      // If this was a utility bill, remember the bill_ref so sync won't re-create it
-      if (exp.bill_ref) {
-        dismissedBillRefs.current.add(exp.bill_ref);
-        if (DISMISSED_KEY) {
-          AsyncStorage.setItem(DISMISSED_KEY, JSON.stringify([...dismissedBillRefs.current])).catch(() => {});
-        }
+    if (exp.bill_ref && !exp.bill_ref.startsWith("dismissed_")) {
+      // Utility bill: soft-delete by prefixing bill_ref so sync won't re-create it.
+      // This persists in Supabase so it works across all devices and sessions.
+      const { error } = await supabase.from("expenses")
+        .update({ bill_ref: `dismissed_${exp.bill_ref}`, amount: 0 })
+        .eq("id", exp.id);
+      if (error) {
+        if (isWeb) window.alert(error.message);
+        else showAlert(t("error"), error.message);
+        return;
       }
-      fetchAll();
+    } else {
+      // Non-utility expense or already dismissed: hard delete
+      const { error } = await supabase.from("expenses").delete().eq("id", exp.id);
+      if (error) {
+        if (isWeb) window.alert(error.message);
+        else showAlert(t("error"), error.message);
+        return;
+      }
     }
+    fetchAll();
   }
 
   async function deleteExpense(exp: Expense) {
