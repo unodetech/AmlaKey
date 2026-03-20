@@ -53,7 +53,7 @@ const SEO = {
     "NWC bill",
   ].join(", "),
   author: "أملاكي",
-  playStoreId: "com.amlakey.app",
+  appStoreId: "6760889831",
 };
 
 /**
@@ -71,7 +71,7 @@ function getStructuredData(isAr: boolean) {
       url: SEO.url,
       applicationCategory: "BusinessApplication",
       applicationSubCategory: "PropertyManagement",
-      operatingSystem: "iOS, Android, Web",
+      operatingSystem: "iOS, Web",
       offers: [
         {
           "@type": "Offer",
@@ -168,10 +168,10 @@ function getStructuredData(isAr: boolean) {
         },
         {
           "@type": "Question",
-          name: "هل التطبيق يعمل على الأيفون والأندرويد؟",
+          name: "هل التطبيق يعمل على الأيفون والويب؟",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "نعم، أملاكي متاح على iOS و Android وعلى الويب. يمكنك الوصول لبياناتك من أي جهاز.",
+            text: "نعم، أملاكي متاح على iOS وعلى الويب. يمكنك الوصول لبياناتك من أي جهاز.",
           },
         },
         {
