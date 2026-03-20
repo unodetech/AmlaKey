@@ -11,7 +11,6 @@ import { NotificationProvider } from "../context/NotificationContext";
 import { SubscriptionProvider } from "../context/SubscriptionContext";
 import { userKey, BIOMETRIC_LOCK_KEY } from "../lib/storage";
 import BiometricGate from "../components/BiometricGate";
-import { RTLSwipeBack } from "../components/RTLSwipeBack";
 
 const isWeb = Platform.OS === "web";
 
@@ -159,15 +158,10 @@ function RootNavigator() {
             : {
                 animation: I18nManager.isRTL ? "slide_from_left" : "slide_from_right",
                 animationDuration: 250,
-                gestureEnabled: !I18nManager.isRTL,
-                gestureDirection: "horizontal",
+                gestureEnabled: true,
+                gestureDirection: I18nManager.isRTL ? "horizontal-inverted" : "horizontal",
               }),
         }}
-        {...(!isWeb && {
-          screenLayout: ({ children }: { children: React.ReactNode }) => (
-            <RTLSwipeBack>{children}</RTLSwipeBack>
-          ),
-        })}
       >
         <Stack.Screen name="landing" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />

@@ -1,5 +1,5 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { I18nManager, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   interpolate,
@@ -224,9 +224,18 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, Props>(
           {
             borderRadius,
             width: ACTION_WIDTH,
-            // Use writingDirection to prevent I18nManager from auto-flipping flexDirection
+            // I18nManager auto-mirrors left/right when isRTL, so we must
+            // counteract: if both isRTL and I18nManager.isRTL are true,
+            // setting left:0 gets mirrored to right:0 — use right:0 instead
+            // so it gets mirrored back to left:0 (where we want it).
             flexDirection: "row",
-            ...(isRTL ? { left: 0, writingDirection: "ltr" } : { right: 0 }),
+            ...(isRTL
+              ? I18nManager.isRTL
+                ? { right: 0 }   // gets auto-mirrored to left:0 ✓
+                : { left: 0 }
+              : I18nManager.isRTL
+                ? { left: 0 }    // gets auto-mirrored to right:0 ✓
+                : { right: 0 }),
           },
           actionsStyle,
         ]}>
