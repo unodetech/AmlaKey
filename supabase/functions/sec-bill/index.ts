@@ -51,14 +51,14 @@ Deno.serve(async (req: Request) => {
     const accountNumber = body?.accountNumber;
 
     if (!accountNumber || typeof accountNumber !== "string") {
-      return respond({ error: "accountNumber is required" }, 400);
+      return respond({ error: "accountNumber is required" });
     }
 
     const SEC_KEY = Deno.env.get("SEC_KEY") ?? "";
     const SEC_API = Deno.env.get("SEC_API") ?? "";
 
     if (!SEC_KEY || !SEC_API) {
-      return respond({ error: "Server config missing" }, 500);
+      return respond({ error: "Server config missing" });
     }
 
     const encrypted = await encryptAccount(accountNumber.trim(), SEC_KEY);
@@ -90,16 +90,15 @@ Deno.serve(async (req: Request) => {
     } catch {
       return respond(
         { error: "Non-JSON response from SEC", status: apiRes.status, body: text.slice(0, 300) },
-        502
       );
     }
 
     if (json?.Error?.ErrorMessage) {
-      return respond({ error: json.Error.ErrorMessage }, 400);
+      return respond({ error: json.Error.ErrorMessage });
     }
 
     if (!json?.d) {
-      return respond({ error: "No data returned from SEC", raw: json }, 400);
+      return respond({ error: "No data returned from SEC", raw: json });
     }
 
     const d = json.d;
@@ -114,6 +113,6 @@ Deno.serve(async (req: Request) => {
       contractAccount: accountNumber.trim(),
     });
   } catch (err) {
-    return respond({ error: (err as Error).message || "Internal server error" }, 500);
+    return respond({ error: (err as Error).message || "Internal server error" });
   }
 });

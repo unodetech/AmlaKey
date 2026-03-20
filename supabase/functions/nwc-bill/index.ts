@@ -48,7 +48,6 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "accountNumber is required" }),
         {
-          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -59,7 +58,6 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "Server configuration missing (NWC_API)" }),
         {
-          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -101,7 +99,6 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: `${code}: ${desc}` }),
         {
-          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -118,7 +115,6 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "No account data returned from NWC" }),
         {
-          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -153,7 +149,6 @@ Deno.serve(async (req: Request) => {
         error: (err as Error).message || "Internal server error",
       }),
       {
-        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
