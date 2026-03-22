@@ -59,12 +59,21 @@ export async function cacheUpdate(
 export async function cacheDelete(
   table: string,
   userId: string,
-  filter: Record<string, any>
+  filter: Record<string, any>,
+  like?: Record<string, string>
 ): Promise<void> {
   const existing = (await cacheGet<any[]>(table, userId)) ?? [];
-  const filtered = existing.filter((row) =>
-    !Object.entries(filter).every(([k, v]) => row[k] === v)
-  );
+  const filtered = existing.filter((row) => {
+    const eqMatch = Object.entries(filter).every(([k, v]) => row[k] === v);
+    const likeMatch = like
+      ? Object.entries(like).every(([k, v]) => {
+          const escaped = String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const pattern = escaped.replace(/%/g, ".*");
+          return new RegExp(`^${pattern}$`, "i").test(String(row[k] ?? ""));
+        })
+      : true;
+    return !(eqMatch && likeMatch);
+  });
   await cacheSet(table, userId, filtered);
 }
 

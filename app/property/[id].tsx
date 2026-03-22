@@ -202,7 +202,7 @@ export default function PropertyUnitsScreen() {
           text: t("delete") ?? "Delete",
           style: "destructive",
           onPress: async () => {
-            const { error } = await offlineDb.del("expenses", user!.id, { bill_ref_like: `${prefix}%` });
+            const { error } = await offlineDb.del("expenses", user!.id, {}, { bill_ref: `${prefix}%` });
             if (error) xAlert(t("error") ?? "Error", error.message);
             else {
               refreshPendingCount();

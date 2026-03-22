@@ -188,13 +188,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // ── Persist notifications whenever they change ──────────────────────────────
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (!uid) return; // Don't save when logged out
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       const capped = notifications.slice(0, MAX_HISTORY);
-      if (uid) AsyncStorage.setItem(userKey(uid, NOTIFICATION_HISTORY_KEY), JSON.stringify(capped)).catch(() => {});
+      AsyncStorage.setItem(userKey(uid, NOTIFICATION_HISTORY_KEY), JSON.stringify(capped)).catch(() => {});
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [notifications]);
+  }, [notifications, uid]);
 
   // ── Notification received listener ──────────────────────────────────────────
   useEffect(() => {

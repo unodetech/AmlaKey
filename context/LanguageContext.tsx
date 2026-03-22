@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { I18nManager, Platform } from "react-native";
+import { Alert, BackHandler, I18nManager, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Updates from "expo-updates";
 import { getLocales } from "expo-localization";
@@ -424,7 +424,6 @@ const translations = {
     noTenantsShort: "No tenants",
     leaseStartRequired: "Lease start date is required",
     leaseEndRequired: "Lease end date is required",
-    syncing: "Syncing...",
     // Recent updates
     newTenantAdded: "New tenant added",
     rentCollected: "Rent collected",
@@ -1048,7 +1047,6 @@ const translations = {
     noTenantsShort: "لا يوجد مستأجرون",
     leaseStartRequired: "تاريخ بداية العقد مطلوب",
     leaseEndRequired: "تاريخ انتهاء العقد مطلوب",
-    syncing: "مزامنة...",
     // Recent updates
     newTenantAdded: "مستأجر جديد",
     rentCollected: "تم تحصيل الإيجار",
@@ -1273,19 +1271,26 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     AsyncStorage.getItem("@lang").then((v) => {
+      let resolved: Language;
       if (v === "en" || v === "ar") {
-        setLang(v);
+        resolved = v;
       } else {
         // First launch — detect device locale, default to Arabic
         try {
           const locales = getLocales();
           const deviceLang = locales?.[0]?.languageCode;
-          const detected: Language = deviceLang === "en" ? "en" : "ar";
-          setLang(detected);
-          AsyncStorage.setItem("@lang", detected).catch(() => {});
+          resolved = deviceLang === "en" ? "en" : "ar";
         } catch {
-          // Fallback to Arabic (default)
-          AsyncStorage.setItem("@lang", "ar").catch(() => {});
+          resolved = "ar";
+        }
+        AsyncStorage.setItem("@lang", resolved).catch(() => {});
+      }
+      setLang(resolved);
+      // Ensure I18nManager RTL state matches the saved language on startup
+      if (Platform.OS !== "web") {
+        const shouldBeRTL = resolved === "ar";
+        if (I18nManager.isRTL !== shouldBeRTL) {
+          I18nManager.forceRTL(shouldBeRTL);
         }
       }
     }).catch(() => {}).finally(() => setInitialized(true));
@@ -1310,20 +1315,35 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       if (Updates.isEnabled) {
         try {
           await Updates.reloadAsync();
+          return; // reloaded successfully
         } catch {
           // reloadAsync failed — fall through to alert
         }
       }
-      // If updates disabled or reload failed, ask user to restart
-      if (!Updates.isEnabled) {
-        const { Alert } = require("react-native");
-        Alert.alert(
-          next === "ar" ? "أعد تشغيل التطبيق" : "Restart Required",
-          next === "ar"
-            ? "يرجى إغلاق التطبيق وإعادة فتحه لتطبيق تغيير اللغة."
-            : "Please close and reopen the app to apply the language change.",
-        );
-      }
+      // Ask user to restart — tapping the button closes the app
+      Alert.alert(
+        next === "ar" ? "أعد تشغيل التطبيق" : "Restart Required",
+        next === "ar"
+          ? "اضغط لإعادة تشغيل التطبيق وتطبيق تغيير اللغة."
+          : "Tap to restart the app and apply the language change.",
+        [
+          {
+            text: next === "ar" ? "أعد التشغيل" : "Restart App",
+            onPress: () => {
+              if (Platform.OS === "android") {
+                BackHandler.exitApp();
+              } else {
+                // iOS: reload the JS bundle as a restart equivalent
+                Updates.reloadAsync().catch(() => {
+                  // Last resort: exit (not recommended on iOS but user requested it)
+                  BackHandler.exitApp();
+                });
+              }
+            },
+          },
+        ],
+        { cancelable: false },
+      );
     }
   };
 

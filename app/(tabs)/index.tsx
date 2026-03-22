@@ -140,7 +140,7 @@ export default function DashboardScreen() {
     });
   }, [uid]);
 
-  useFocusEffect(useCallback(() => { fetchDashboard(); fetchCalendarEvents(); }, []));
+  useFocusEffect(useCallback(() => { if (uid) { fetchDashboard(); fetchCalendarEvents(); } }, [uid]));
 
   async function fetchDashboard() {
     const thisMonth = new Date().toISOString().slice(0, 7);

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator, I18nManager, Linking, Platform, ScrollView,
+  ActivityIndicator, Linking, Platform, ScrollView,
   StyleSheet, Text, TouchableOpacity, View,
 } from "react-native";
 import { showAlert, crossAlert } from "../../lib/alert";
@@ -99,18 +99,9 @@ export default function ProfileScreen() {
   useFocusEffect(useCallback(() => { loadPersonalInfo(); }, [loadPersonalInfo, storageKey]));
 
   const handleLanguageToggle = () => {
-    const switchingToArabic = lang === "en";
+    // applyLanguage (called by toggle) handles I18nManager.forceRTL
+    // and shows a restart alert on native when RTL direction changes.
     toggle();
-    if (isWeb) {
-      document.documentElement.dir = switchingToArabic ? "rtl" : "ltr";
-      document.documentElement.lang = switchingToArabic ? "ar" : "en";
-    } else {
-      I18nManager.allowRTL(switchingToArabic);
-      I18nManager.forceRTL(switchingToArabic);
-    }
-    setTimeout(() => {
-      showAlert(t("langChanged"), t("langChangedMsg"));
-    }, 100);
   };
 
   const firstName = personalInfo.fullName ? personalInfo.fullName.split(" ")[0] : "";

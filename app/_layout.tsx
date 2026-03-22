@@ -15,14 +15,10 @@ import BiometricGate from "../components/BiometricGate";
 
 const isWeb = Platform.OS === "web";
 
-// Force RTL at module load time — this runs BEFORE any component renders.
-// I18nManager.forceRTL only takes effect after an app restart, so we must
-// set it as early as possible. Default to Arabic (RTL) since that's the
-// primary language. AsyncStorage.getItem is async but we set the default
-// synchronously here; the LanguageProvider will update if user chose English.
+// Allow RTL support on native — LanguageProvider handles the actual
+// forceRTL call after reading the saved language preference.
 if (!isWeb) {
   I18nManager.allowRTL(true);
-  I18nManager.forceRTL(true);
 }
 
 function SplashView({ isRTL }: { isRTL: boolean }) {
@@ -102,19 +98,11 @@ function RootNavigator() {
       });
   }, [session, loading]);
 
-  // Sync RTL direction: on web update document dir, on native update I18nManager
+  // Sync document direction on web (native RTL is handled by LanguageContext)
   useEffect(() => {
-    if (isWeb) {
-      if (typeof document !== "undefined") {
-        document.documentElement.dir = isRTL ? "rtl" : "ltr";
-        document.documentElement.lang = isRTL ? "ar" : "en";
-      }
-      return;
-    }
-    if (I18nManager.isRTL !== isRTL) {
-      I18nManager.allowRTL(isRTL);
-      I18nManager.forceRTL(isRTL);
-      // Note: RTL change takes effect on next app restart
+    if (isWeb && typeof document !== "undefined") {
+      document.documentElement.dir = isRTL ? "rtl" : "ltr";
+      document.documentElement.lang = isRTL ? "ar" : "en";
     }
   }, [isRTL]);
 

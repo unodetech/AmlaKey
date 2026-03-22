@@ -53,7 +53,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   );
 
   const canAddUnits = useCallback(
-    (unitCount: number) => isPro || unitCount <= FREE_LIMITS.maxUnitsPerProperty,
+    (unitCount: number) => isPro || unitCount < FREE_LIMITS.maxUnitsPerProperty,
     [isPro]
   );
 

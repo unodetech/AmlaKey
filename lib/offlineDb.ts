@@ -97,8 +97,9 @@ export async function select<T = any>(
   if (like) {
     result = result.filter((row) =>
       Object.entries(like).every(([k, v]) => {
-        const pattern = String(v).replace(/%/g, ".*");
-        return new RegExp(pattern, "i").test(String(row[k] ?? ""));
+        const escaped = String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const pattern = escaped.replace(/%/g, ".*");
+        return new RegExp(`^${pattern}$`, "i").test(String(row[k] ?? ""));
       })
     );
   }
@@ -186,15 +187,17 @@ export async function update(
 export async function del(
   table: string,
   userId: string,
-  filter: Record<string, any>
+  filter: Record<string, any>,
+  like?: Record<string, string>
 ): Promise<{ error: any }> {
   if (_isOnline) {
     try {
       let q = supabase.from(table).delete();
       for (const [k, v] of Object.entries(filter)) q = q.eq(k, v);
+      if (like) { for (const [k, v] of Object.entries(like)) q = q.like(k, v); }
       const { error } = await q;
       if (error) throw error;
-      await cacheDelete(table, userId, filter);
+      await cacheDelete(table, userId, filter, like);
       return { error: null };
     } catch (e) {
       // Fall through to offline queue
@@ -202,8 +205,8 @@ export async function del(
   }
 
   // Offline: optimistic local delete + queue
-  await cacheDelete(table, userId, filter);
-  await enqueue({ table, operation: "delete", data: {}, filter });
+  await cacheDelete(table, userId, filter, like);
+  await enqueue({ table, operation: "delete", data: {}, filter: { ...filter, ...Object.fromEntries(Object.entries(like ?? {}).map(([k, v]) => [`${k}_like`, v])) } });
   return { error: null };
 }
 

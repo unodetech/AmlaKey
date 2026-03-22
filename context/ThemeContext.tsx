@@ -32,10 +32,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggleTheme = useCallback(async () => {
-    const next = mode === "dark" ? "light" : "dark";
-    setMode(next);
-    await AsyncStorage.setItem("@theme", next);
-  }, [mode]);
+    setMode((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      AsyncStorage.setItem("@theme", next).catch(() => {});
+      return next;
+    });
+  }, []);
 
   const value = useMemo(() => ({
     mode, toggleTheme,

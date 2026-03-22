@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // assume no session and show auth screen instead of hanging on splash.
     const timeout = setTimeout(() => {
       if (mounted && loading) {
+        mounted = false; // Ignore late getSession response
         setSession(null);
         setLoading(false);
       }
