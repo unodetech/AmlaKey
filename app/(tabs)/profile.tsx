@@ -195,7 +195,7 @@ export default function ProfileScreen() {
           }
         />
         <Divider />
-        <TouchableOpacity onPress={() => { if (!hasFeature("dark_mode")) { crossAlert(t("upgradeRequired"), t("upgradeToUnlock"), [{ text: t("upgrade"), onPress: () => router.push("/paywall" as any) }, { text: t("later"), style: "cancel" }]); return; } toggleTheme(); }} activeOpacity={0.7} accessibilityRole="switch" accessibilityLabel={isDark ? t("darkMode") : t("lightMode")} accessibilityState={{ checked: isDark }}>
+        <TouchableOpacity onPress={() => toggleTheme()} activeOpacity={0.7} accessibilityRole="switch" accessibilityLabel={isDark ? t("darkMode") : t("lightMode")} accessibilityState={{ checked: isDark }}>
           <View style={[S.row, isRTL && S.rowRev]}>
             <View style={S.rowIconWrap}>
               <Text style={S.rowIcon}>{isDark ? "🌙" : "☀️"}</Text>
@@ -313,6 +313,29 @@ export default function ProfileScreen() {
       >
         <Text style={{ fontSize: 20 }}>📋</Text>
         <Text style={[S.perfText, isRTL && { textAlign: "right" }]}>{t("reports")}</Text>
+        <Text style={{ fontSize: 16, color: C.textMuted }}>{isRTL ? "‹" : "›"}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[S.perfBanner, isRTL && { flexDirection: "row-reverse" }, { marginTop: 8 }]}
+        onPress={() => {
+          if (!hasFeature("vault" as any)) {
+            crossAlert(t("upgradeRequired"), t("upgradeToUnlock"), [
+              { text: t("upgrade"), onPress: () => router.push("/paywall" as any) },
+              { text: t("later"), style: "cancel" },
+            ]);
+            return;
+          }
+          router.push("/vault" as any);
+        }}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={t("vault")}
+      >
+        <Text style={{ fontSize: 20 }}>📁</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[S.perfText, isRTL && { textAlign: "right" }]}>{t("vault")}</Text>
+        </View>
+        {!isPro && <Text style={{ fontSize: 10, color: C.accent, fontWeight: "700", marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }}>PRO</Text>}
         <Text style={{ fontSize: 16, color: C.textMuted }}>{isRTL ? "‹" : "›"}</Text>
       </TouchableOpacity>
 

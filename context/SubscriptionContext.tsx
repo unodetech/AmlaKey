@@ -22,7 +22,7 @@ export type ProFeature =
   | "unlimited_units"
   | "whatsapp_broadcast"
   | "export_reports"
-  | "dark_mode";
+  | "vault";
 
 // ── Context types ─────────────────────────────────────────────────────────────
 interface SubscriptionContextValue {
@@ -61,8 +61,12 @@ const SubscriptionContext = createContext<SubscriptionContextValue>({
 export const useSubscription = () => useContext(SubscriptionContext);
 
 // ── Provider ──────────────────────────────────────────────────────────────────
+// Developer/testing accounts that get Pro features for free
+const DEV_PRO_EMAILS = ["yousef.f@me.com"];
+
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const isDevPro = DEV_PRO_EMAILS.includes(user?.email ?? "");
   const [isPro, setIsPro] = useState(false);
   const [loading, setLoading] = useState(true);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
@@ -144,33 +148,35 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   }, []);
 
   // ── Check free-tier limits ────────────────────────────────────────────────
+  const effectivePro = isPro || isDevPro;
+
   const canAddProperty = useCallback(
-    (currentCount: number) => isPro || currentCount < FREE_LIMITS.maxProperties,
-    [isPro]
+    (currentCount: number) => effectivePro || currentCount < FREE_LIMITS.maxProperties,
+    [effectivePro]
   );
 
   const canAddUnits = useCallback(
-    (unitCount: number) => isPro || unitCount <= FREE_LIMITS.maxUnitsPerProperty,
-    [isPro]
+    (unitCount: number) => effectivePro || unitCount <= FREE_LIMITS.maxUnitsPerProperty,
+    [effectivePro]
   );
 
   // ── Check pro feature access ──────────────────────────────────────────────
   const hasFeature = useCallback(
     (feature: ProFeature): boolean => {
-      if (isPro) return true;
+      if (effectivePro) return true;
       // Free features
       switch (feature) {
         case "unlimited_properties":
         case "unlimited_units":
         case "whatsapp_broadcast":
         case "export_reports":
-        case "dark_mode":
+        case "vault":
           return false;
         default:
           return false;
       }
     },
-    [isPro]
+    [effectivePro]
   );
 
   // ── Purchase ──────────────────────────────────────────────────────────────
@@ -212,7 +218,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   return (
     <SubscriptionContext.Provider
       value={{
-        isPro, loading, customerInfo, packages,
+        isPro: effectivePro, loading, customerInfo, packages,
         canAddProperty, canAddUnits, hasFeature,
         purchasePackage, restorePurchases, refreshStatus,
       }}

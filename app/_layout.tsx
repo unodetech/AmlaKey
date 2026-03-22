@@ -173,6 +173,7 @@ function RootNavigator() {
         <Stack.Screen name="performance" options={{ headerShown: false }} />
         <Stack.Screen name="ejar-import" options={{ headerShown: false }} />
         <Stack.Screen name="personal-info" options={{ headerShown: false }} />
+        <Stack.Screen name="vault" options={{ headerShown: false }} />
         <Stack.Screen name="reports" options={{ headerShown: false }} />
         <Stack.Screen name="terms" options={{ headerShown: false }} />
         <Stack.Screen name="privacy" options={{ headerShown: false }} />

@@ -22,7 +22,7 @@ const PRO_FEATURES = [
   { icon: "🏢", key: "featureUnlimitedProperties", descKey: "featureUnlimitedPropertiesDesc" },
   { icon: "🏠", key: "featureUnlimitedUnits", descKey: "featureUnlimitedUnitsDesc" },
   { icon: "📊", key: "featureExportReports", descKey: "featureExportReportsDesc" },
-  { icon: "🌙", key: "featureDarkMode", descKey: "featureDarkModeDesc" },
+  { icon: "📁", key: "featureVault", descKey: "featureVaultDesc" },
 ] as const;
 
 const FREE_FEATURES = [

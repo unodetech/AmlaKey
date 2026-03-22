@@ -21,8 +21,11 @@ import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, radii } from "../../constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 import { WebDateInput, modalBackdropStyle, ModalOverlay, webContentClickStop } from "../../components/WebDateInput";
 import { getDuePeriodMonth } from "../../lib/dateUtils";
+import { useSubscription } from "../../context/SubscriptionContext";
+import { getDocuments, VaultDocument, DOC_TYPE_ICONS, DocType } from "../../lib/vault";
 
 type TenantMap = Record<string, { id: string; name: string; status: string; monthly_rent: number; lease_start: string; payment_frequency?: string }>;
 type LabelMap = Record<string, string>;
@@ -62,6 +65,7 @@ export default function PropertyUnitsScreen() {
   const { t, isRTL } = useLanguage();
   const { colors: C, shadow, isDark } = useTheme();
   const { user } = useAuth();
+  const { isPro } = useSubscription();
   const insets = useSafeAreaInsets();
   const S = useMemo(() => styles(C, shadow, isRTL), [C, shadow, isRTL]);
 
@@ -69,6 +73,8 @@ export default function PropertyUnitsScreen() {
   const [tenantMap, setTenantMap] = useState<TenantMap>({});
   const [labelMap, setLabelMap] = useState<LabelMap>({});
   const [loading, setLoading] = useState(true);
+  const [propertyDocs, setPropertyDocs] = useState<VaultDocument[]>([]);
+  const [showDocs, setShowDocs] = useState(false);
 
   // Property edit modal
   const [editModal, setEditModal] = useState(false);
@@ -282,6 +288,12 @@ export default function PropertyUnitsScreen() {
   }, [id]);
 
   useFocusEffect(useCallback(() => { fetchData(); fetchPropertyDetails(); }, [fetchData]));
+
+  // Load property documents (Pro only)
+  useEffect(() => {
+    if (!isPro || !user?.id || !id) return;
+    getDocuments(user.id, { propertyId: id as string }).then(setPropertyDocs).catch(() => {});
+  }, [isPro, user?.id, id]);
 
   const handleUnitPress = (unitNum: number) => {
     const key = String(unitNum);
@@ -553,6 +565,47 @@ export default function PropertyUnitsScreen() {
               </TouchableOpacity>
             );
           })}
+          {/* ── Documents Section (Pro) ── */}
+          {isPro && (
+            <View style={{ marginTop: 16, paddingHorizontal: spacing.md }}>
+              <TouchableOpacity
+                onPress={() => setShowDocs(!showDocs)}
+                style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12 }, isRTL && { flexDirection: "row-reverse" }]}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "700", color: C.text }}>
+                  📁 {t("documents")} ({propertyDocs.length})
+                </Text>
+                <Ionicons name={showDocs ? "chevron-up" : "chevron-down"} size={18} color={C.textMuted} />
+              </TouchableOpacity>
+              {showDocs && (
+                <View>
+                  {propertyDocs.length === 0 ? (
+                    <Text style={{ color: C.textMuted, fontSize: 13, textAlign: isRTL ? "right" : "left", paddingVertical: 8 }}>
+                      {t("noDocuments")}
+                    </Text>
+                  ) : (
+                    propertyDocs.map((doc) => (
+                      <View key={doc.id} style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: C.border }, isRTL && { flexDirection: "row-reverse" }]}>
+                        <Text style={{ fontSize: 20 }}>{DOC_TYPE_ICONS[doc.type as DocType] || "📄"}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontWeight: "600", color: C.text, textAlign: isRTL ? "right" : "left" }} numberOfLines={1}>{doc.name}</Text>
+                          <Text style={{ fontSize: 11, color: C.textMuted, textAlign: isRTL ? "right" : "left" }}>{new Date(doc.created_at).toLocaleDateString(isRTL ? "ar-SA" : "en-US")}</Text>
+                        </View>
+                      </View>
+                    ))
+                  )}
+                  <TouchableOpacity
+                    onPress={() => router.push({ pathname: "/vault", params: { propertyId: id } } as any)}
+                    style={{ paddingVertical: 12, alignItems: "center" }}
+                  >
+                    <Text style={{ color: C.accent, fontWeight: "600", fontSize: 14 }}>
+                      {t("addDocument")} →
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
           <View style={{ height: 32 }} />
         </ScrollView>
       )}

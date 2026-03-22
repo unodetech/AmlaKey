@@ -12,7 +12,7 @@ export type ProFeature =
   | "unlimited_units"
   | "whatsapp_broadcast"
   | "export_reports"
-  | "dark_mode";
+  | "vault";
 
 // ── Context types (same interface as native) ──────────────────────────────────
 interface SubscriptionContextValue {

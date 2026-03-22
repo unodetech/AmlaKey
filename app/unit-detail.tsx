@@ -36,6 +36,8 @@ import { generateAndShareReceipt, ReceiptData } from "../lib/receiptGenerator";
 import { userKey, HIJRI_KEY, EJAR_IMPORT_KEY } from "../lib/storage";
 import WebContainer from "../components/WebContainer";
 import { WebDateInput, modalBackdropStyle, ModalOverlay, webContentClickStop } from "../components/WebDateInput";
+import { useSubscription } from "../context/SubscriptionContext";
+import { getDocuments, VaultDocument, DOC_TYPE_ICONS, DocType } from "../lib/vault";
 
 type Tenant = {
   id: string;
@@ -89,8 +91,10 @@ export default function UnitDetailScreen() {
   const { colors: C, shadow, isDark } = useTheme();
   const { addNotification, settings: notifSettings } = useNotification();
   const { user } = useAuth();
+  const { isPro } = useSubscription();
   const insets = useSafeAreaInsets();
   const S = useMemo(() => styles(C, shadow, isRTL), [C, shadow, isRTL]);
+  const [unitDocs, setUnitDocs] = useState<VaultDocument[]>([]);
 
   // Hijri calendar preference
   const [showHijri, setShowHijri] = useState(false);
@@ -265,6 +269,12 @@ export default function UnitDetailScreen() {
       });
     }, [])
   );
+
+  // Load unit documents
+  useEffect(() => {
+    if (!isPro || !uid || !propertyId) return;
+    getDocuments(uid, { propertyId: propertyId as string, unitId: unitNumber as string }).then(setUnitDocs).catch(() => {});
+  }, [isPro, uid, propertyId, unitNumber]);
 
   // ── Add Tenant ──────────────────────────────────────────────
   const handleAddTenant = async () => {
@@ -651,6 +661,20 @@ export default function UnitDetailScreen() {
           ))}
         </View>
       )}
+      {isPro && unitDocs.length > 0 && (
+        <View style={{ marginTop: 16, paddingHorizontal: spacing.md }}>
+          <Text style={{ fontSize: 15, fontWeight: "700", color: C.text, marginBottom: 8, textAlign: isRTL ? "right" : "left" }}>📁 {t("documents")} ({unitDocs.length})</Text>
+          {unitDocs.map((doc) => (
+            <View key={doc.id} style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 }, isRTL && { flexDirection: "row-reverse" }]}>
+              <Text style={{ fontSize: 18 }}>{DOC_TYPE_ICONS[doc.type as DocType] || "📄"}</Text>
+              <Text style={{ flex: 1, fontSize: 13, color: C.text, textAlign: isRTL ? "right" : "left" }} numberOfLines={1}>{doc.name}</Text>
+            </View>
+          ))}
+          <TouchableOpacity onPress={() => router.push({ pathname: "/vault", params: { propertyId, unitId: unitNumber } } as any)} style={{ paddingVertical: 8 }}>
+            <Text style={{ color: C.accent, fontWeight: "600", fontSize: 13 }}>{t("addDocument")} →</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -923,6 +947,20 @@ export default function UnitDetailScreen() {
           </View>
         )}
 
+        {isPro && unitDocs.length > 0 && (
+          <View style={{ marginTop: 16, paddingHorizontal: spacing.md }}>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: C.text, marginBottom: 8, textAlign: isRTL ? "right" : "left" }}>📁 {t("documents")} ({unitDocs.length})</Text>
+            {unitDocs.map((doc) => (
+              <View key={doc.id} style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 }, isRTL && { flexDirection: "row-reverse" }]}>
+                <Text style={{ fontSize: 18 }}>{DOC_TYPE_ICONS[doc.type as DocType] || "📄"}</Text>
+                <Text style={{ flex: 1, fontSize: 13, color: C.text, textAlign: isRTL ? "right" : "left" }} numberOfLines={1}>{doc.name}</Text>
+              </View>
+            ))}
+            <TouchableOpacity onPress={() => router.push({ pathname: "/vault", params: { propertyId, unitId: unitNumber } } as any)} style={{ paddingVertical: 8 }}>
+              <Text style={{ color: C.accent, fontWeight: "600", fontSize: 13 }}>{t("addDocument")} →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={{ height: 40 }} />
       </ScrollView>
     );
