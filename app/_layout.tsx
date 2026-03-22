@@ -148,7 +148,7 @@ function RootNavigator() {
                 animation: I18nManager.isRTL ? "slide_from_left" : "slide_from_right",
                 animationDuration: 250,
                 gestureEnabled: true,
-                gestureDirection: I18nManager.isRTL ? "horizontal-inverted" : "horizontal",
+                gestureDirection: "horizontal" as const,
               }),
         }}
       >
