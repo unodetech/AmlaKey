@@ -50,6 +50,12 @@ export function Onboarding({ visible, onComplete }: Props) {
   const translateX = useSharedValue(0);
   const startX = useSharedValue(0);
   const cardTranslateY = useSharedValue(40);
+  const rtlDir = useSharedValue(isRTL ? 1 : -1);
+
+  // Keep rtlDir in sync with isRTL
+  React.useEffect(() => {
+    rtlDir.value = isRTL ? 1 : -1;
+  }, [isRTL]);
 
   // Animate card entrance
   React.useEffect(() => {
@@ -62,8 +68,7 @@ export function Onboarding({ visible, onComplete }: Props) {
     "worklet";
     const clamped = Math.max(0, Math.min(idx, SLIDE_COUNT - 1));
     currentSlide.value = clamped;
-    const dir = isRTL ? 1 : -1;
-    translateX.value = withTiming(dir * clamped * CARD_WIDTH, { duration: 300 });
+    translateX.value = withTiming(rtlDir.value * clamped * CARD_WIDTH, { duration: 300 });
     if (Haptics) runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
