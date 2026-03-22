@@ -1,7 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { I18nManager, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useNotification } from "../context/NotificationContext";
-import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 
 interface Props {
@@ -10,8 +9,8 @@ interface Props {
 
 export function NotificationBell({ onPress }: Props) {
   const { unreadCount } = useNotification();
-  const { isRTL } = useLanguage();
   const { colors: C } = useTheme();
+  const isRTL = I18nManager.isRTL;
 
   return (
     <TouchableOpacity
