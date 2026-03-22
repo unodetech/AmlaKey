@@ -99,13 +99,13 @@ export default function LandingPage() {
         style={[
           s.navbar,
           {
-            flexDirection: isRTL ? "row-reverse" : "row",
+            flexDirection: "row",
             ...(isWeb && ({ position: "sticky" as any, top: 0 } as any)),
           },
         ]}
       >
-        <View style={[s.navInner, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-          <View style={[s.navBrand, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <View style={[s.navInner, { flexDirection: "row" }]}>
+          <View style={[s.navBrand, { flexDirection: "row" }]}>
             <Image
               source={require("../assets/images/splash-icon.png")}
               style={s.navLogo}
@@ -114,7 +114,7 @@ export default function LandingPage() {
             <Text style={s.navBrandText}>{isRTL ? "أملاكي" : "Amlakey"}</Text>
           </View>
 
-          <View style={[s.navActions, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+          <View style={[s.navActions, { flexDirection: "row" }]}>
             <Pressable
               onPress={toggle}
               style={({ hovered }: any) => [
@@ -131,7 +131,7 @@ export default function LandingPage() {
               onPress={() => router.push("/auth")}
               style={({ hovered }: any) => [
                 s.loginBtn,
-                { flexDirection: isRTL ? "row-reverse" : "row" },
+                { flexDirection: "row" },
                 hovered && { backgroundColor: C.primaryDark },
               ]}
             >
@@ -169,7 +169,7 @@ export default function LandingPage() {
                 s.heroCTAs,
                 {
                   flexDirection: isDesktop
-                    ? isRTL ? "row-reverse" : "row"
+                    ? "row"
                     : "column",
                 },
               ]}
@@ -178,7 +178,7 @@ export default function LandingPage() {
                 onPress={() => router.push("/auth")}
                 style={({ hovered }: any) => [
                   s.ctaPrimary,
-                  { flexDirection: isRTL ? "row-reverse" : "row" },
+                  { flexDirection: "row" },
                   hovered && s.ctaHover,
                 ]}
               >
@@ -190,7 +190,7 @@ export default function LandingPage() {
                 onPress={() => Linking.openURL("https://apps.apple.com")}
                 style={({ hovered }: any) => [
                   s.ctaOutline,
-                  { flexDirection: isRTL ? "row-reverse" : "row" },
+                  { flexDirection: "row" },
                   hovered && s.ctaOutlineHover,
                 ]}
               >
@@ -206,7 +206,7 @@ export default function LandingPage() {
 
         {/* ── Stats Bar ──────────────────────────── */}
         <View style={s.statsSection}>
-          <View style={[s.statsInner, { flexDirection: isDesktop ? (isRTL ? "row-reverse" : "row") : "row", flexWrap: "wrap" }]}>
+          <View style={[s.statsInner, { flexDirection: "row", flexWrap: "wrap" }]}>
             {[
               { end: 500, suffix: "+", label: t("landingStatsProperties" as any) },
               { end: 10000, suffix: "+", label: t("landingStatsTransactions" as any) },
@@ -235,7 +235,7 @@ export default function LandingPage() {
             <View
               style={[
                 s.featuresGrid,
-                { flexDirection: isRTL ? "row-reverse" : "row" },
+                { flexDirection: "row" },
               ]}
             >
               {FEATURES.map((f, i) => (
@@ -273,7 +273,7 @@ export default function LandingPage() {
             </Text>
             <Text style={s.sectionSub}>{t("landingHowSub" as any)}</Text>
 
-            <View style={[s.stepsRow, { flexDirection: isDesktop ? (isRTL ? "row-reverse" : "row") : "column" }]}>
+            <View style={[s.stepsRow, { flexDirection: isDesktop ? ("row") : "column" }]}>
               {HOW_STEPS.map((step, i) => (
                 <View key={i} style={[s.stepCard, { width: isDesktop ? "30%" : "100%" } as any]}>
                   <View style={s.stepNumber}>
@@ -304,7 +304,7 @@ export default function LandingPage() {
                 s.pricingRow,
                 {
                   flexDirection: isDesktop
-                    ? isRTL ? "row-reverse" : "row"
+                    ? "row"
                     : "column",
                 },
               ]}
@@ -319,7 +319,7 @@ export default function LandingPage() {
                   {t("landingPriceFreeItems")
                     .split("|")
                     .map((item, i) => (
-                      <View key={i} style={[s.priceItem, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+                      <View key={i} style={[s.priceItem, { flexDirection: "row" }]}>
                         <Text style={s.priceCheck}>✓</Text>
                         <Text style={[s.priceItemText, isRTL && { textAlign: "right" }]}>{item}</Text>
                       </View>
@@ -327,7 +327,7 @@ export default function LandingPage() {
                   {t("landingPriceFreeDisabled")
                     .split("|")
                     .map((item, i) => (
-                      <View key={`d${i}`} style={[s.priceItem, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+                      <View key={`d${i}`} style={[s.priceItem, { flexDirection: "row" }]}>
                         <Text style={s.priceX}>✕</Text>
                         <Text style={[s.priceItemText, s.priceDisabled, isRTL && { textAlign: "right" }]}>
                           {item}
@@ -366,7 +366,7 @@ export default function LandingPage() {
                   {t("landingPriceProItems")
                     .split("|")
                     .map((item, i) => (
-                      <View key={i} style={[s.priceItem, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+                      <View key={i} style={[s.priceItem, { flexDirection: "row" }]}>
                         <Text style={s.priceCheck}>✓</Text>
                         <Text style={[s.priceItemText, isRTL && { textAlign: "right" }]}>{item}</Text>
                       </View>
@@ -390,7 +390,7 @@ export default function LandingPage() {
               {t("landingCtaTitle" as any)}
             </Text>
             <Text style={s.ctaSectionSub}>{t("landingCtaSub" as any)}</Text>
-            <View style={[s.ctaSectionBtns, { flexDirection: isDesktop ? (isRTL ? "row-reverse" : "row") : "column" }]}>
+            <View style={[s.ctaSectionBtns, { flexDirection: isDesktop ? ("row") : "column" }]}>
               <Pressable
                 onPress={() => router.push("/auth")}
                 style={({ hovered }: any) => [s.ctaSectionBtn, hovered && { backgroundColor: "#f1f5f9" }]}
@@ -414,7 +414,7 @@ export default function LandingPage() {
           <View style={s.sectionInner}>
             <Text style={s.footerBrand}>{t("landingFooterBrand")}</Text>
             <Text style={s.footerSub}>{t("landingFooterSub")}</Text>
-            <View style={[s.footerLinks, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <View style={[s.footerLinks, { flexDirection: "row" }]}>
               <Pressable onPress={() => router.push("/privacy")}>
                 <Text style={s.footerLink}>{t("privacyPolicy")}</Text>
               </Pressable>
