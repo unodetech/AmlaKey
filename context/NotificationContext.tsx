@@ -414,11 +414,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const data = response.notification.request.content.data as any;
       if (!data?.type) return;
 
-      // Mark notification as read if we can find it
+      // Mark notification as read — match by identifier first, fall back to first unread with same title
+      const identifier = response.notification.request.identifier;
       const title = response.notification.request.content.title ?? "";
-      setNotifications((prev) =>
-        prev.map((n) => (n.title === title && !n.read) ? { ...n, read: true } : n)
-      );
+      setNotifications((prev) => {
+        const idx = prev.findIndex((n) => !n.read && n.id === identifier);
+        const matchIdx = idx >= 0 ? idx : prev.findIndex((n) => !n.read && n.title === title);
+        if (matchIdx < 0) return prev;
+        return prev.map((n, i) => i === matchIdx ? { ...n, read: true } : n);
+      });
 
       // Navigate based on notification type
       if (data.type === "rent_due_reminder" || data.type === "overdue_rent" || data.type === "payment_received") {
