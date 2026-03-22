@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, View, ViewStyle } from "react-native";
+import { Animated, I18nManager, StyleSheet, View, ViewStyle } from "react-native";
 import { useTheme } from "../context/ThemeContext";
-import { useLanguage } from "../context/LanguageContext";
 
 interface SkeletonProps {
   width?: number | string;
@@ -44,7 +43,7 @@ function SkeletonBox({ width = "100%", height = 16, borderRadius = 8, style }: S
 /** A skeleton card that mimics a property/tenant card */
 export function SkeletonCard() {
   const { colors: C, shadow } = useTheme();
-  const { isRTL } = useLanguage();
+  const isRTL = I18nManager.isRTL;
   return (
     <View style={[cardStyles.card, { backgroundColor: C.surface, borderColor: C.border }, shadow]}>
       <View style={cardStyles.row}>

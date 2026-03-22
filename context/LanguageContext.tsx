@@ -1205,6 +1205,7 @@ const LanguageContext = createContext<LangCtx>({
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = useState<Language>("ar");
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem("@lang").then((v) => {
@@ -1223,7 +1224,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           AsyncStorage.setItem("@lang", "ar").catch(() => {});
         }
       }
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setInitialized(true));
   }, []);
 
   // Sync document direction on web whenever language changes
@@ -1266,6 +1267,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const setLanguage = (l: Language) => applyLanguage(l);
 
   const t = (k: TKey): string => (translations[lang][k] as string) ?? k;
+
+  // Block children until async language initialization completes to prevent
+  // context access crashes on native with Hermes + React Compiler
+  if (!initialized) return null;
+
   return (
     <LanguageContext.Provider value={{ lang, toggle, setLanguage, t, isRTL: lang === "ar" }}>
       {children}
