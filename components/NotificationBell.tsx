@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useNotification } from "../context/NotificationContext";
+import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 
 export function NotificationBell({ onPress }: Props) {
   const { unreadCount } = useNotification();
+  const { isRTL } = useLanguage();
   const { colors: C } = useTheme();
 
   return (
@@ -19,7 +21,7 @@ export function NotificationBell({ onPress }: Props) {
     >
       <Text style={styles.icon}>🔔</Text>
       {unreadCount > 0 && (
-        <View style={styles.badge}>
+        <View style={[styles.badge, { [isRTL ? "left" : "right"]: -4 }]}>
           <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
         </View>
       )}
@@ -39,7 +41,6 @@ const styles = StyleSheet.create({
   badge: {
     position: "absolute",
     top: -4,
-    right: -4,
     backgroundColor: "#FF3B30",
     borderRadius: 10,
     minWidth: 18,

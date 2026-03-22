@@ -62,7 +62,8 @@ export function Onboarding({ visible, onComplete }: Props) {
     "worklet";
     const clamped = Math.max(0, Math.min(idx, SLIDE_COUNT - 1));
     currentSlide.value = clamped;
-    translateX.value = withTiming(-clamped * CARD_WIDTH, { duration: 300 });
+    const dir = isRTL ? 1 : -1;
+    translateX.value = withTiming(dir * clamped * CARD_WIDTH, { duration: 300 });
     if (Haptics) runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
