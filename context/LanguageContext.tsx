@@ -1242,10 +1242,22 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       I18nManager.allowRTL(next === "ar");
       I18nManager.forceRTL(next === "ar");
       // I18nManager changes require a reload to take effect
-      try {
-        await Updates.reloadAsync();
-      } catch {
-        // In dev mode, reloadAsync may not work — that's OK
+      if (Updates.isEnabled) {
+        try {
+          await Updates.reloadAsync();
+        } catch {
+          // reloadAsync failed — fall through to alert
+        }
+      }
+      // If updates disabled or reload failed, ask user to restart
+      if (!Updates.isEnabled) {
+        const { Alert } = require("react-native");
+        Alert.alert(
+          next === "ar" ? "أعد تشغيل التطبيق" : "Restart Required",
+          next === "ar"
+            ? "يرجى إغلاق التطبيق وإعادة فتحه لتطبيق تغيير اللغة."
+            : "Please close and reopen the app to apply the language change.",
+        );
       }
     }
   };
