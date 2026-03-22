@@ -525,7 +525,7 @@ const styles = (C: any, shadow: any, isRTL: boolean) => StyleSheet.create({
   filterChipActive: { backgroundColor: C.primary, borderColor: C.primary },
   filterChipText: { fontSize: 13, color: C.textMuted, fontWeight: "500" },
   filterChipTextActive: { color: "#fff", fontWeight: "700" },
-  countBadge: { marginLeft: "auto", fontSize: 12, color: C.textMuted },
+  countBadge: { marginStart: "auto" as any, fontSize: 12, color: C.textMuted },
   sortRow: { flexDirection: "row", paddingHorizontal: spacing.md, marginBottom: 8, gap: 6 },
   sortPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border },
   sortPillActive: { backgroundColor: C.accent + "20", borderColor: C.accent },

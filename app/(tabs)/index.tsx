@@ -567,7 +567,7 @@ export default function DashboardScreen() {
                   <Text style={S.tapHint}>▼</Text>
                 </View>
               </View>
-              <View style={[S.progressBg, isDesktop && { height: 10 }]}>
+              <View style={[S.progressBg, isDesktop && { height: 10 }, isRTL && { transform: [{ scaleX: -1 }] }]}>
                 <View style={[S.progressFill, { width: `${occupancyPct}%` as any }]} />
               </View>
               <View style={[S.occStats, isRTL && S.rowRev]}>
@@ -679,11 +679,11 @@ export default function DashboardScreen() {
                     <View style={[S.rowBetween, isRTL && S.rowRev]}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                         <Text style={[S.propOccName, isRTL && { textAlign: "right" }]}>{p.name}</Text>
-                        <Text style={S.propOccArrow}>›</Text>
+                        <Text style={[S.propOccArrow, isRTL && { transform: [{ scaleX: -1 }] }]}>›</Text>
                       </View>
                       <Text style={[S.propOccPct, { color: col }]}>{pct}%</Text>
                     </View>
-                    <View style={S.progressBg}>
+                    <View style={[S.progressBg, isRTL && { transform: [{ scaleX: -1 }] }]}>
                       <View style={[S.progressFill, { width: `${pct}%` as any, backgroundColor: col }]} />
                     </View>
                     <Text style={[S.propOccSub, isRTL && { textAlign: "right" }]}>
