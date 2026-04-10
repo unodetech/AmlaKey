@@ -146,6 +146,7 @@ export default function DashboardScreen() {
   useFocusEffect(useCallback(() => { if (uid) { fetchDashboard(); fetchCalendarEvents(); } }, [uid]));
 
   async function fetchDashboard() {
+   try {
     const thisMonth = new Date().toISOString().slice(0, 7);
     const [
       { data: props }, { data: activeTenants }, { data: allTenants },
@@ -220,7 +221,7 @@ export default function DashboardScreen() {
       const { count } = await supabase
         .from("maintenance_requests")
         .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .in("status", ["open", "in_progress"]);
       setOpenMaintenanceCount(count ?? 0);
     } catch { setOpenMaintenanceCount(0); }
@@ -247,7 +248,7 @@ export default function DashboardScreen() {
           monthlyRent: dueAmount,
           overdueAmount: dueAmount - totalPaid,
           dueDay,
-          daysOverdue: Math.max(0, today.getDate() - dueDay),
+          daysOverdue: Math.max(0, Math.floor((today.getTime() - new Date(today.getFullYear(), today.getMonth(), dueDay).getTime()) / 86400000)),
         });
       }
     }
@@ -335,12 +336,16 @@ export default function DashboardScreen() {
 
     // Schedule notifications based on fresh data
     rescheduleAll(activeTenants ?? [], payByTenant ?? []);
-
+   } catch (e) {
+    if (__DEV__) console.error("fetchDashboard error:", e);
+   } finally {
     setLoading(false);
     setRefreshing(false);
+   }
   }
 
   async function fetchCalendarEvents() {
+   try {
     const [{ data: tenants }, { data: payments }] = await Promise.all([
       offlineDb.select("tenants", { userId: uid, columns: "name, unit_number, lease_start, lease_end, status, properties(name)" }),
       offlineDb.select("payments", { userId: uid, columns: "payment_date, amount, tenants(name)" }),
@@ -384,6 +389,9 @@ export default function DashboardScreen() {
       }
     });
     setCalendarEvents(events);
+   } catch (e) {
+    if (__DEV__) console.error("fetchCalendarEvents error:", e);
+   }
   }
 
   const netIncome = collected - expenses;
@@ -589,10 +597,10 @@ export default function DashboardScreen() {
                 <View style={[{ flexDirection: "row", alignItems: "center", gap: 8 }, isRTL && S.rowRev]}>
                   <Text style={{ fontSize: isDesktop ? 24 : 20, marginBottom: 4 }}>{"\uD83C\uDFDA\uFE0F"}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={[S.statLabel, { fontSize: isDesktop ? 14 : 12 }]}>{isRTL ? "تكلفة الشغور الشهرية" : "Monthly Vacancy Cost"}</Text>
+                    <Text style={[S.statLabel, { fontSize: isDesktop ? 14 : 12 }]}>{t("vacancyCost")}</Text>
                     <Text style={[S.statValLg, { color: "#F97316" }, isDesktop && { fontSize: 28 }]}>{Math.round(vacancyCost).toLocaleString()}</Text>
                     <Text style={[S.statSub, isDesktop && { fontSize: 12 }]}>
-                      {t("sar")} - {totalUnits - occupiedUnits} {isRTL ? "وحدات شاغرة" : "vacant units"}
+                      {t("sar")} - {totalUnits - occupiedUnits} {t("vacantUnitsCount")}
                     </Text>
                   </View>
                 </View>

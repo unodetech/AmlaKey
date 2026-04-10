@@ -888,7 +888,8 @@ export default function UnitDetailScreen() {
                 disabled={!tenant.phone}
                 onValueChange={async (val) => {
                   setTenant((prev) => prev ? { ...prev, whatsapp_enabled: val } : prev);
-                  await supabase.from("tenants").update({ whatsapp_enabled: val }).eq("id", tenant.id);
+                  const { error } = await offlineDb.update("tenants", uid, { id: tenant.id }, { whatsapp_enabled: val });
+                  if (error) setTenant((prev) => prev ? { ...prev, whatsapp_enabled: !val } : prev);
                 }}
                 trackColor={{ false: "#ccc", true: "#25D366" }}
                 thumbColor="#fff"
@@ -905,7 +906,8 @@ export default function UnitDetailScreen() {
                 value={tenant.maintenance_enabled === true}
                 onValueChange={async (val) => {
                   setTenant((prev) => prev ? { ...prev, maintenance_enabled: val } : prev);
-                  await supabase.from("tenants").update({ maintenance_enabled: val }).eq("id", tenant.id);
+                  const { error } = await offlineDb.update("tenants", uid, { id: tenant.id }, { maintenance_enabled: val });
+                  if (error) setTenant((prev) => prev ? { ...prev, maintenance_enabled: !val } : prev);
                 }}
                 trackColor={{ false: "#ccc", true: C.primary }}
                 thumbColor="#fff"

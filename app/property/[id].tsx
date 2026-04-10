@@ -228,6 +228,8 @@ export default function PropertyUnitsScreen() {
       longitude: editForm.longitude,
       owner_name: editForm.owner_name.trim() || null,
       owner_phone: editForm.owner_phone.trim() || null,
+      sec_account: editForm.has_multiple_sec ? null : (editForm.sec_account.trim() || null),
+      nwc_account: editForm.has_multiple_nwc ? null : (editForm.nwc_account.trim() || null),
     });
     setEditSaving(false);
     if (error) { xAlert(t("error"), error.message); }

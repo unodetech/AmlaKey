@@ -185,24 +185,30 @@ export default function PropertiesScreen() {
     });
   }, [uid]);
 
-  useEffect(() => { fetchProperties(); }, []);
+  useEffect(() => { if (uid) fetchProperties(); }, [uid]);
 
   async function fetchProperties() {
+    if (!uid) return;
     setLoading(true);
-    const [{ data: propData }, { data: tenantData }] = await Promise.all([
-      offlineDb.select("properties", { userId: uid, order: { column: "created_at", ascending: false } }),
-      offlineDb.select("tenants", { userId: uid, columns: "property_id,monthly_rent", eq: { status: "active" } }),
-    ]);
-    if (propData) setProperties(propData as Property[]);
-    // Build income map from active tenant rents
-    const incMap: Record<string, number> = {};
-    for (const tn of ((tenantData as any[]) ?? [])) {
-      if (tn.property_id) {
-        incMap[tn.property_id] = (incMap[tn.property_id] ?? 0) + (tn.monthly_rent ?? 0);
+    try {
+      const [{ data: propData }, { data: tenantData }] = await Promise.all([
+        offlineDb.select("properties", { userId: uid, order: { column: "created_at", ascending: false } }),
+        offlineDb.select("tenants", { userId: uid, columns: "property_id,monthly_rent", eq: { status: "active" } }),
+      ]);
+      if (propData) setProperties(propData as Property[]);
+      // Build income map from active tenant rents
+      const incMap: Record<string, number> = {};
+      for (const tn of ((tenantData as any[]) ?? [])) {
+        if (tn.property_id) {
+          incMap[tn.property_id] = (incMap[tn.property_id] ?? 0) + (tn.monthly_rent ?? 0);
+        }
       }
+      setTenantIncomeByProp(incMap);
+    } catch (e) {
+      if (__DEV__) console.error("fetchProperties error:", e);
+    } finally {
+      setLoading(false);
     }
-    setTenantIncomeByProp(incMap);
-    setLoading(false);
   }
 
   async function addProperty() {

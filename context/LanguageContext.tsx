@@ -687,6 +687,8 @@ const translations = {
     viewMaintenanceRequests: "View Maintenance Requests",
     viewImage: "View Image",
     failedToLoadImage: "Failed to load image",
+    settings: "Settings",
+    unknown: "Unknown",
   },
   ar: {
     // Tabs
@@ -1368,6 +1370,8 @@ const translations = {
     viewMaintenanceRequests: "عرض طلبات الصيانة",
     viewImage: "عرض الصورة",
     failedToLoadImage: "فشل تحميل الصورة",
+    settings: "الإعدادات",
+    unknown: "غير معروف",
   },
 };
 

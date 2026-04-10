@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { Platform } from "react-native";
 import { Session, User } from "@supabase/supabase-js";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../lib/supabase";
 
 interface AuthCtx {
@@ -84,7 +85,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     setIsPasswordRecovery(false);
-    await supabase.auth.signOut();
+    try {
+      // Clear user-scoped data to prevent leaking to next user
+      const keys = await AsyncStorage.getAllKeys();
+      const userKeys = keys.filter(k => k.startsWith("user:"));
+      if (userKeys.length > 0) await AsyncStorage.multiRemove(userKeys);
+    } catch {}
+    try { await supabase.auth.signOut(); } catch {}
   }, []);
 
   const clearPasswordRecovery = useCallback(() => {
