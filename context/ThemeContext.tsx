@@ -14,19 +14,19 @@ interface ThemeCtx {
 }
 
 const ThemeContext = createContext<ThemeCtx>({
-  mode: "dark", toggleTheme: () => {}, colors: darkColors, isDark: true, shadow: makeShadow(true),
+  mode: "light", toggleTheme: () => {}, colors: lightColors, isDark: false, shadow: makeShadow(false),
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
-  const [mode, setMode] = useState<ThemeMode>("dark");
+  const [mode, setMode] = useState<ThemeMode>("light");
 
   useEffect(() => {
     AsyncStorage.getItem("@theme").then((v) => {
       if (v === "light" || v === "dark") {
         setMode(v);
-      } else if (systemScheme) {
-        setMode(systemScheme as ThemeMode);
+      } else {
+        setMode(systemScheme === "dark" ? "dark" : "light");
       }
     }).catch(() => {});
   }, []);

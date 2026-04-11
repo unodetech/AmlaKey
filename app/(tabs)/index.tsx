@@ -17,6 +17,7 @@ import { useOnboarding } from "../../hooks/useOnboarding";
 import { useNotification } from "../../context/NotificationContext";
 import { NotificationBell } from "../../components/NotificationBell";
 import { NotificationCenter } from "../../components/NotificationCenter";
+import { Ionicons } from "@expo/vector-icons";
 import { formatDualDate, formatMonthDual, isPaymentDueInMonth } from "../../lib/dateUtils";
 import { useAuth } from "../../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -443,17 +444,17 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Quick Actions */}
+        {/* Quick Actions — focused on daily tasks */}
         {(() => {
           const quickActions = [
-            { emoji: "🏠", label: t("addProperty"), onPress: () => router.push("/(tabs)/properties") },
-            { emoji: "💳", label: t("collectPayment"), onPress: () => router.push("/(tabs)/tenants") },
-            { emoji: "🧾", label: t("addExpense"), onPress: () => router.push("/(tabs)/expenses") },
-            { emoji: "🔔", label: t("broadcastMessage"), onPress: () => { setBroadcastFilter("all"); setBroadcastSelected(null); setBroadcastMsgType("auto"); setBroadcastCustomMsg(""); setBroadcastModal(true); } },
+            { icon: "cash-outline" as const, label: t("collectPayment"), onPress: () => router.push("/(tabs)/tenants"), color: "#22C55E" },
+            { icon: "receipt-outline" as const, label: t("addExpense"), onPress: () => router.push("/(tabs)/expenses"), color: "#EF4444" },
+            { icon: "business-outline" as const, label: t("addProperty"), onPress: () => router.push("/(tabs)/properties"), color: C.primary },
+            { icon: "megaphone-outline" as const, label: t("broadcastMessage"), onPress: () => { setBroadcastFilter("all"); setBroadcastSelected(null); setBroadcastMsgType("auto"); setBroadcastCustomMsg(""); setBroadcastModal(true); }, color: "#F59E0B" },
           ] as const;
           const cards = quickActions.map((item, i) => (
             <TouchableOpacity key={i} style={[S.quickActionCard, isDesktop && S.quickActionCardDesktop]} onPress={item.onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={item.label}>
-              <Text style={[S.quickActionEmoji, isDesktop && { fontSize: 26 }]}>{item.emoji}</Text>
+              <Ionicons name={item.icon} size={isDesktop ? 26 : 22} color={item.color} style={{ marginBottom: 4 }} />
               <Text style={[S.quickActionLabel, isDesktop && { fontSize: 13 }]} numberOfLines={1}>{item.label}</Text>
             </TouchableOpacity>
           ));
@@ -472,6 +473,26 @@ export default function DashboardScreen() {
           <ActivityIndicator color={C.accent} size="large" style={{ marginTop: 60 }} />
         ) : (<>
 
+          {/* Empty state — first-time user guidance */}
+          {totalUnits === 0 && propertyOccs.length === 0 && (
+            <TouchableOpacity
+              style={{ backgroundColor: isDark ? "#1E293B" : "#F0FDF4", borderRadius: radii.lg, marginHorizontal: spacing.md, marginBottom: 16, padding: spacing.lg, borderWidth: 1, borderColor: isDark ? "#334155" : "#BBF7D0", alignItems: "center" }}
+              onPress={() => router.push("/(tabs)/properties")}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="home-outline" size={40} color={C.accent} style={{ marginBottom: 12 }} />
+              <Text style={{ color: C.text, fontSize: 18, fontWeight: "700", marginBottom: 6, textAlign: "center" }}>
+                {isRTL ? "أضف أول عقار لك" : "Add Your First Property"}
+              </Text>
+              <Text style={{ color: C.subText, fontSize: 14, textAlign: "center", marginBottom: 12 }}>
+                {isRTL ? "ابدأ بإضافة عقارك الأول لتتبع الإيجارات والمستأجرين" : "Start by adding your first property to track rent and tenants"}
+              </Text>
+              <View style={{ backgroundColor: C.accent, borderRadius: radii.md, paddingHorizontal: 24, paddingVertical: 10 }}>
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>{t("addProperty")}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
           {/* Stats Grid — 4-col on wide, 2-col otherwise */}
           <View style={[S.statsGrid, isRTL && S.rowRev, isWide && { gap: 12 }]}>
             <Pressable
@@ -480,7 +501,7 @@ export default function DashboardScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${t("revenue")}: ${revenue.toLocaleString()} ${t("sar")}`}
             >
-              <Text style={{ fontSize: isDesktop ? 22 : 18, marginBottom: 2 }}>📈</Text>
+              <Ionicons name="trending-up" size={isDesktop ? 22 : 18} color={C.primary} style={{ marginBottom: 2 }} />
               <Text style={[S.statLabel, isDesktop && { fontSize: 13 }]}>{t("revenue")}</Text>
               <Text style={[S.statVal, { color: C.primary }, isDesktop && { fontSize: 22 }]}>{revenue.toLocaleString()}</Text>
               <Text style={[S.statSub, isDesktop && { fontSize: 11 }]}>{t("sar")} - {currentMonthName}</Text>
@@ -491,7 +512,7 @@ export default function DashboardScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${t("overduePayments")}: ${totalOverdue.toLocaleString()} ${t("sar")}`}
             >
-              <Text style={{ fontSize: isDesktop ? 22 : 18, marginBottom: 2 }}>⚠️</Text>
+              <Ionicons name="alert-circle" size={isDesktop ? 22 : 18} color="#F59E0B" style={{ marginBottom: 2 }} />
               <Text style={[S.statLabel, isDesktop && { fontSize: 13 }]}>{t("overduePayments")}</Text>
               <Text style={[S.statVal, { color: "#F59E0B" }, isDesktop && { fontSize: 22 }]}>
                 {totalOverdue.toLocaleString()}
@@ -506,7 +527,7 @@ export default function DashboardScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${t("collected")}: ${collected.toLocaleString()} ${t("sar")}, ${collectionPct}%`}
             >
-              <Text style={{ fontSize: isDesktop ? 22 : 18, marginBottom: 2 }}>💰</Text>
+              <Ionicons name="wallet" size={isDesktop ? 22 : 18} color="#3B82F6" style={{ marginBottom: 2 }} />
               <Text style={[S.statLabel, isDesktop && { fontSize: 13 }]}>{t("collected")}</Text>
               <Text style={[S.statVal, { color: "#22C55E" }, isDesktop && { fontSize: 22 }]}>{collected.toLocaleString()}</Text>
               <Text style={[S.statSub, isDesktop && { fontSize: 11 }]}>{collectionPct}%</Text>
@@ -517,7 +538,7 @@ export default function DashboardScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${t("totalExpenses")}: ${expenses.toLocaleString()} ${t("sar")}`}
             >
-              <Text style={{ fontSize: isDesktop ? 22 : 18, marginBottom: 2 }}>🧾</Text>
+              <Ionicons name="receipt" size={isDesktop ? 22 : 18} color="#EF4444" style={{ marginBottom: 2 }} />
               <Text style={[S.statLabel, isDesktop && { fontSize: 13 }]}>{t("totalExpenses")}</Text>
               <Text style={[S.statVal, { color: "#EF4444" }, isDesktop && { fontSize: 22 }]}>{expenses.toLocaleString()}</Text>
               <Text style={[S.statSub, isDesktop && { fontSize: 11 }]}>{t("sar")} - {currentMonthName}</Text>
@@ -532,7 +553,7 @@ export default function DashboardScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${t("netIncome")}: ${netIncome.toLocaleString()} ${t("sar")}`}
             >
-              <Text style={{ fontSize: isDesktop ? 24 : 20, marginBottom: 4 }}>💵</Text>
+              <Ionicons name="cash" size={isDesktop ? 24 : 20} color={netIncome >= 0 ? C.accent : "#EF4444"} style={{ marginBottom: 4 }} />
               <Text style={[S.statLabel, { fontSize: isDesktop ? 14 : 12 }]}>{t("netIncome")}</Text>
               <Text style={[S.statValLg, { color: netIncome >= 0 ? C.accent : "#EF4444" }, isDesktop && { fontSize: 28 }]}>{netIncome.toLocaleString()}</Text>
               <Text style={[S.statSub, isDesktop && { fontSize: 12 }]}>{t("sar")} - {currentMonthName}</Text>

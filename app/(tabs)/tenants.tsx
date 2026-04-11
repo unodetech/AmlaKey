@@ -637,7 +637,7 @@ export default function TenantsScreen() {
                     <View style={{ flex: 1, marginHorizontal: 10 }}>
                       <Text style={[S.tenantName, isRTL && { textAlign: "right" }]}>{tenant.name}</Text>
                       <Text style={[S.tenantSub, isRTL && { textAlign: "right" }]}>
-                        {tenant.properties?.name ?? ""} {tenant.unit_number ? `· ${tenant.unit_number}` : ""}
+                        {tenant.properties?.name ?? ""}{tenant.unit_number ? ` · ${t("unit")} ${tenant.unit_number}` : ""}
                       </Text>
                     </View>
                     <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 6 }}>
@@ -658,8 +658,17 @@ export default function TenantsScreen() {
                   <View style={S.divider} />
                   <View style={[S.cardBottom, isRTL && S.rowRev]}>
                     {tenant.phone ? <Text style={S.detailText}>📞 {tenant.phone}</Text> : null}
-                    <Text style={S.rentText}>{tenant.monthly_rent.toLocaleString()} {t("sar")}/mo</Text>
-                    {tenant.lease_end ? <Text style={S.detailText}>📅 {tenant.lease_end}</Text> : null}
+                    <Text style={S.rentText}>{tenant.monthly_rent.toLocaleString()} {t("sar")}/{isRTL ? "شهر" : "mo"}</Text>
+                    {tenant.lease_end ? (() => {
+                      const daysLeft = Math.ceil((new Date(tenant.lease_end + "T23:59:59").getTime() - Date.now()) / 86400000);
+                      const color = daysLeft < 0 ? "#EF4444" : daysLeft < 30 ? "#F59E0B" : C.subText;
+                      const label = daysLeft < 0
+                        ? (isRTL ? "منتهي" : "Expired")
+                        : daysLeft < 30
+                          ? (isRTL ? `${daysLeft} يوم متبقي` : `${daysLeft}d left`)
+                          : tenant.lease_end;
+                      return <Text style={[S.detailText, { color }]}>📅 {label}</Text>;
+                    })() : null}
                   </View>
                   {tenant.status === "active" && (
                     <TouchableOpacity style={S.collectBtn} onPress={() => openPayModal(tenant)} accessibilityRole="button" accessibilityLabel={`${t("markAsPaid") ?? "Collect Payment"} - ${tenant.name}`}>

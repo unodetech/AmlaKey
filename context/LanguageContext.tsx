@@ -696,7 +696,7 @@ const translations = {
     expenses: "المصاريف", profile: "الملف",
     // Greetings
     goodMorning: "صباح الخير", goodAfternoon: "مساء الخير", goodEvening: "مساء النور",
-    hereIsYourOverview: "إليك نظرة عامة على محفظتك",
+    hereIsYourOverview: "نظرة عامة على عقاراتك",
     // Dashboard
     revenue: "الإيجارات المتوقعة", collected: "المحصّل", totalExpenses: "المصاريف", netIncome: "صافي الدخل",
     monthlyIncome: "الدخل السنوي المتوقع", occupancyRate: "نسبة الإشغال",
@@ -1110,7 +1110,7 @@ const translations = {
     cityPlaceholder: "الرياض",
     // Splash
     appName: "أملاكي",
-    smartPropertyManager: "مدير املاكك الذكي",
+    smartPropertyManager: "مدير أملاكك الذكي",
     // Unit detail
     endLease: "إنهاء العقد",
     frequency: "دورية الدفع",
@@ -1395,13 +1395,18 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       if (v === "en" || v === "ar") {
         resolved = v;
       } else {
-        // First launch — detect device language
+        // First launch — detect device/browser language
         try {
           const locales = getLocales();
           const deviceLang = locales?.[0]?.languageCode;
           resolved = deviceLang === "ar" ? "ar" : "en";
         } catch {
-          resolved = "en";
+          // Fallback: check browser language on web
+          if (Platform.OS === "web" && typeof navigator !== "undefined") {
+            resolved = navigator.language?.startsWith("ar") ? "ar" : "en";
+          } else {
+            resolved = "en";
+          }
         }
         await AsyncStorage.setItem("@lang", resolved).catch(() => {});
       }

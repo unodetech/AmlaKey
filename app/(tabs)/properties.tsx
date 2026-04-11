@@ -116,6 +116,7 @@ export default function PropertiesScreen() {
 
   const [addPropErrors, setAddPropErrors] = useState<Record<string, string>>({});
   const [editPropErrors, setEditPropErrors] = useState<Record<string, string>>({});
+  const [showMoreFields, setShowMoreFields] = useState(false);
   const [tenantIncomeByProp, setTenantIncomeByProp] = useState<Record<string, number>>({});
 
   const [defaultCity, setDefaultCity] = useState("alkharj");
@@ -546,34 +547,49 @@ export default function PropertiesScreen() {
                       placeholder={t("city")} placeholderTextColor={C.textMuted}
                       value={form.city} onChangeText={(v) => setForm({ ...form, city: v })} />
                   )}
-                  <Text style={S.fieldLabel}>{isRTL ? "المالك" : "Owner"}</Text>
-                  <TextInput style={[S.input, isRTL && { textAlign: "right" }]}
-                    placeholder={isRTL ? "اسم المالك (اختياري)" : "Owner Name (optional)"} placeholderTextColor={C.textMuted}
-                    value={form.owner_name} onChangeText={(v) => setForm({ ...form, owner_name: v })} />
-                  <TextInput style={[S.input, isRTL && { textAlign: "right" }]}
-                    placeholder={isRTL ? "هاتف المالك (اختياري)" : "Owner Phone (optional)"} placeholderTextColor={C.textMuted}
-                    keyboardType="phone-pad"
-                    value={form.owner_phone} onChangeText={(v) => setForm({ ...form, owner_phone: v })} />
-                  <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 6 }}>
-                    <TextInput style={[S.input, { flex: 1 }, !!addPropErrors.units && S.inputError]} placeholder={t("totalUnits")}
-                      placeholderTextColor={C.textMuted} keyboardType="numeric" returnKeyType="done"
-                      value={form.total_units} onChangeText={(v) => { setForm({ ...form, total_units: v }); const n = parseInt(v); setAddPropErrors((e) => ({ ...e, units: v.trim() && (isNaN(n) || n < 1) ? t("validationUnitsRequired") : v.trim() && n > 500 ? t("validationUnitsMax") : "" })); }} />
-                    <TextInput style={[S.input, { flex: 1 }, !!addPropErrors.floors && S.inputError]} placeholder={t("floors")}
-                      placeholderTextColor={C.textMuted} keyboardType="numeric" returnKeyType="done"
-                      value={form.floors} onChangeText={(v) => { setForm({ ...form, floors: v }); const n = parseInt(v); setAddPropErrors((e) => ({ ...e, floors: v.trim() && n > 100 ? t("validationFloorsMax") : "" })); }} />
-                  </View>
-                  {(!!addPropErrors.units || !!addPropErrors.floors) && (
-                    <Text style={S.fieldError}>{addPropErrors.units || addPropErrors.floors}</Text>
-                  )}
-                  <TextInput style={[S.input, isRTL && { textAlign: "right" }, !!addPropErrors.income && S.inputError]}
-                    placeholder={`${t("monthlyIncome")} (${t("sar")})`} placeholderTextColor={C.textMuted}
-                    keyboardType="numeric" returnKeyType="done"
-                    value={form.monthly_income} onChangeText={(v) => { setForm({ ...form, monthly_income: v }); const n = parseFloat(v); setAddPropErrors((e) => ({ ...e, income: v.trim() && n > 9999999 ? t("validationAmountTooHigh") : "" })); }} />
-                  {!!addPropErrors.income && <Text style={S.fieldError}>{addPropErrors.income}</Text>}
-                  <TextInput style={[S.input, S.notesInput, isRTL && { textAlign: "right" }]}
-                    placeholder={t("notes") ?? "Notes (optional)"} placeholderTextColor={C.textMuted}
-                    multiline numberOfLines={3}
-                    value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} />
+                  <TextInput style={[S.input, { flex: 1 }, !!addPropErrors.units && S.inputError]} placeholder={t("totalUnits")}
+                    placeholderTextColor={C.textMuted} keyboardType="numeric" returnKeyType="done"
+                    value={form.total_units} onChangeText={(v) => { setForm({ ...form, total_units: v }); const n = parseInt(v); setAddPropErrors((e) => ({ ...e, units: v.trim() && (isNaN(n) || n < 1) ? t("validationUnitsRequired") : v.trim() && n > 500 ? t("validationUnitsMax") : "" })); }} />
+                  {!!addPropErrors.units && <Text style={S.fieldError}>{addPropErrors.units}</Text>}
+
+                  {/* Collapsible optional fields */}
+                  <TouchableOpacity
+                    onPress={() => setShowMoreFields(!showMoreFields)}
+                    style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", paddingVertical: 12, gap: 6 }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ color: C.accent, fontWeight: "600", fontSize: 14 }}>
+                      {isRTL ? "تفاصيل إضافية" : "More Details"}
+                    </Text>
+                    <Text style={{ color: C.accent, fontSize: 12 }}>{showMoreFields ? "▲" : "▼"}</Text>
+                  </TouchableOpacity>
+
+                  {showMoreFields && (<>
+                    <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 6 }}>
+                      <TextInput style={[S.input, { flex: 1 }, !!addPropErrors.floors && S.inputError]} placeholder={t("floors")}
+                        placeholderTextColor={C.textMuted} keyboardType="numeric" returnKeyType="done"
+                        value={form.floors} onChangeText={(v) => { setForm({ ...form, floors: v }); const n = parseInt(v); setAddPropErrors((e) => ({ ...e, floors: v.trim() && n > 100 ? t("validationFloorsMax") : "" })); }} />
+                      <TextInput style={[S.input, { flex: 1 }, !!addPropErrors.income && S.inputError]}
+                        placeholder={`${t("monthlyIncome")} (${t("sar")})`} placeholderTextColor={C.textMuted}
+                        keyboardType="numeric" returnKeyType="done"
+                        value={form.monthly_income} onChangeText={(v) => { setForm({ ...form, monthly_income: v }); const n = parseFloat(v); setAddPropErrors((e) => ({ ...e, income: v.trim() && n > 9999999 ? t("validationAmountTooHigh") : "" })); }} />
+                    </View>
+                    {(!!addPropErrors.floors || !!addPropErrors.income) && (
+                      <Text style={S.fieldError}>{addPropErrors.floors || addPropErrors.income}</Text>
+                    )}
+                    <Text style={S.fieldLabel}>{isRTL ? "المالك" : "Owner"}</Text>
+                    <TextInput style={[S.input, isRTL && { textAlign: "right" }]}
+                      placeholder={isRTL ? "اسم المالك (اختياري)" : "Owner Name (optional)"} placeholderTextColor={C.textMuted}
+                      value={form.owner_name} onChangeText={(v) => setForm({ ...form, owner_name: v })} />
+                    <TextInput style={[S.input, isRTL && { textAlign: "right" }]}
+                      placeholder={isRTL ? "هاتف المالك (اختياري)" : "Owner Phone (optional)"} placeholderTextColor={C.textMuted}
+                      keyboardType="phone-pad"
+                      value={form.owner_phone} onChangeText={(v) => setForm({ ...form, owner_phone: v })} />
+                    <TextInput style={[S.input, S.notesInput, isRTL && { textAlign: "right" }]}
+                      placeholder={t("notes") ?? "Notes (optional)"} placeholderTextColor={C.textMuted}
+                      multiline numberOfLines={3}
+                      value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} />
+                  </>)}
 
                   <View style={[S.modalBtns, isRTL && S.rowRev]}>
                     <TouchableOpacity style={S.cancelBtn} onPress={() => setAddVisible(false)} accessibilityRole="button" accessibilityLabel={t("cancel")}>
