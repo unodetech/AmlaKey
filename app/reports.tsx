@@ -92,9 +92,10 @@ export default function ReportsScreen() {
   const [data, setData] = useState<ReportData | null>(null);
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => { fetchData(); }, [selectedMonth]);
+  useEffect(() => { if (user?.id) fetchData(); }, [selectedMonth, user?.id]);
 
   async function fetchData() {
+    if (!user?.id) return;
     setLoading(true);
     try {
       const { startDate, endDate, monthYear } = getDateRange(selectedMonth);
@@ -162,7 +163,7 @@ export default function ReportsScreen() {
       lines.push(`${t("columnTenant")},${t("columnMonthlyRent")},${t("columnProperty")}`);
       data.tenants.forEach((ten: any) => {
         const prop = data.properties.find(p => p.id === ten.property_id);
-        lines.push(`${ten.name},${ten.monthly_rent},${prop?.name || ""}`);
+        lines.push(`"${(ten.name || "").replace(/"/g, '""')}",${ten.monthly_rent},"${(prop?.name || "").replace(/"/g, '""')}"`);
       });
       lines.push("");
     }
@@ -173,7 +174,7 @@ export default function ReportsScreen() {
       lines.push("");
       lines.push(`${t("columnDescription")},${t("columnAmount")},${t("columnCategory")},${t("columnDate")}`);
       data.expenses.forEach((exp: any) => {
-        lines.push(`${exp.description || ""},${exp.amount},${exp.category || ""},${exp.date || ""}`);
+        lines.push(`"${(exp.description || "").replace(/"/g, '""')}",${exp.amount},"${(exp.category || "").replace(/"/g, '""')}",${exp.date || ""}`);
       });
       lines.push("");
     }
@@ -270,6 +271,10 @@ export default function ReportsScreen() {
     setExporting(false);
   }
 
+  function esc(s: string): string {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
   function buildHTML(logoBase64?: string): string {
     if (!data) return "";
     const periodLabel = getMonthLabels(lang).find(ml => ml.month === selectedMonth)?.label ?? "";
@@ -347,7 +352,7 @@ export default function ReportsScreen() {
       html += `<table><tr><th>${t("columnTenant")}</th><th>${t("columnProperty")}</th><th>${t("columnRent")}</th></tr>`;
       data.tenants.forEach((ten: any) => {
         const prop = data.properties.find(p => p.id === ten.property_id);
-        html += `<tr><td>${ten.name}</td><td>${prop?.name || (ten.properties?.name ?? "")}</td><td>${fmt(ten.monthly_rent ?? 0)}</td></tr>`;
+        html += `<tr><td>${esc(ten.name)}</td><td>${esc(prop?.name || (ten.properties?.name ?? ""))}</td><td>${fmt(ten.monthly_rent ?? 0)}</td></tr>`;
       });
       html += `</table>`;
     }
@@ -362,7 +367,7 @@ export default function ReportsScreen() {
         const totalUnits = prop.total_units || 1;
         const occupiedUnits = propTenants.length;
         const occupancyPct = Math.round((occupiedUnits / totalUnits) * 100);
-        html += `<tr><td>${prop.name}</td><td>${occupiedUnits} / ${totalUnits}</td><td>${fmt(monthlyRevenue)}</td><td>${occupancyPct}%</td></tr>`;
+        html += `<tr><td>${esc(prop.name)}</td><td>${occupiedUnits} / ${totalUnits}</td><td>${fmt(monthlyRevenue)}</td><td>${occupancyPct}%</td></tr>`;
       });
       html += `</table>`;
     }
@@ -384,7 +389,7 @@ export default function ReportsScreen() {
       html += `<h2>${t("expenses")}</h2>`;
       html += `<table><tr><th>${t("columnDescription")}</th><th>${t("columnCategory")}</th><th>${t("columnDate")}</th><th>${t("columnAmount")}</th></tr>`;
       data.expenses.forEach((exp: any) => {
-        html += `<tr><td>${exp.description || "—"}</td><td>${exp.category || ""}</td><td>${exp.date || ""}</td><td>${fmt(exp.amount ?? 0)}</td></tr>`;
+        html += `<tr><td>${esc(exp.description || "—")}</td><td>${esc(exp.category || "")}</td><td>${esc(exp.date || "")}</td><td>${fmt(exp.amount ?? 0)}</td></tr>`;
       });
       html += `</table>`;
     }
@@ -398,7 +403,7 @@ export default function ReportsScreen() {
         const totalUnits = prop.total_units || 1;
         const vacant = totalUnits - occupiedUnits;
         const pct = Math.round((occupiedUnits / totalUnits) * 100);
-        html += `<tr><td>${prop.name}</td><td>${totalUnits}</td><td>${occupiedUnits}</td><td>${vacant}</td><td>${pct}%</td></tr>`;
+        html += `<tr><td>${esc(prop.name)}</td><td>${totalUnits}</td><td>${occupiedUnits}</td><td>${vacant}</td><td>${pct}%</td></tr>`;
       });
       html += `</table>`;
     }
